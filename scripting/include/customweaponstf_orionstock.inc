@@ -389,7 +389,7 @@ stock TF2_GetWeaponSlot(client, weapon = 0, inflictor = 0)
 }
 
 // ====[ HEAL ]========================================================
-stock Float:TF2_HealPlayer(target, Float:healed, Float:newOverheal = 1.0, bool:ShowHealth = false)
+stock Float:TF2_HealPlayer(target, Float:healed, Float:newOverheal = 1.0, bool:ShowHealth = true)
 {
     new Float:healing;
     healing += healed;
@@ -425,8 +425,12 @@ stock TF2_ShowHealthGain(client, healed) // Chdata.
 }
 stock TF2_GetHealingTarget(client)
 {
-    if(IsValidClient(client) && TF2_GetPlayerClass(client) == TFClass_Medic) {
-        If (TF2_IsMedigun(client)) return GetEntDataEnt2(iWeapon, FindSendPropInfo("CWeaponMedigun", "m_hHealingTarget"));
+    if(IsValidClient(client) && TF2_GetPlayerClass(client) == TFClass_Medic)
+    {
+        new entity = TF2_Medigun(client);
+        if (entity) {
+            if(GetEntProp(entity, Prop_Send, "m_bHealing") == 1) return GetEntPropEnt(entity, Prop_Send, "m_hHealingTarget");
+        }
     }
     return -1;
 }
@@ -796,11 +800,14 @@ stock any:AttachParticle(ent, String:particleName[], Float:duration = 0.0, Float
     
     return particle;
 }
-stock AddParticle(m_iClient, m_iEntity, String:m_strParticle[], m_iCount)
+stock AddParticle(client, m_iEntity, String:m_strParticle[], m_iCount)
 {
-    for (new i = 0; i < m_iCount; i++)
+    if (IsValidClient(client))
     {
-        AttachParticle(m_iEntity, m_strParticle);
+        for (new i = 0; i < m_iCount; i++)
+        {
+            AttachParticle(m_iEntity, m_strParticle);
+        }
     }
 }
 stock CreateEntityParticle( const String:particleName[], Float:time, Float:pos[3], Float:ang[3]=NULL_VECTOR)
