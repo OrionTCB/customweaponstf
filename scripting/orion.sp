@@ -477,7 +477,6 @@ public OnPluginStart()
     HookEvent( "player_builtobject",         Event_BuiltObject );
 
     HookEvent( "teamplay_restart_round", Event_OnRoundRestart, EventHookMode_Pre );
-    HookEvent( "player_hurt",            Event_Hurt,           EventHookMode_Pre );
     HookEvent( "player_death",           Event_Death,          EventHookMode_Pre );
 
     //Thanks 11530.
@@ -3492,52 +3491,6 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         }
     }
     return Plugin_Continue;
-}
-
-// ====[ EVENT: ON HURT ]==============================================
-public Event_Hurt( Handle:m_hEvent, const String:m_strName[], bool:m_bDontBroadcast )
-{
-    new m_iVictim = GetClientOfUserId( GetEventInt( m_hEvent, "userid" ) );
-    new m_iAttacker = GetClientOfUserId( GetEventInt( m_hEvent, "attacker" ) );
-    new m_iDamage = GetEventInt( m_hEvent, "damageamount" );
-    new m_iCustom = GetEventInt( m_hEvent, "custom" );
-
-    /* Check if any damage is done, if the attacker and victim are valids, if the victim is alive, if the victim isn't in a invulnerable condition, if they're not in the same and not the same player.
-     *
-     * ---------------------------------------------------------------------- */
-    if ( m_iDamage >= 1
-        && IsValidClient( m_iAttacker )
-        && IsValidClient( m_iVictim )
-        && IsPlayerAlive( m_iVictim )
-        && !HasInvulnerabilityCond( m_iVictim )
-        && GetClientTeam( m_iAttacker ) != GetClientTeam( m_iVictim )
-        && m_iVictim != m_iAttacker )
-    {
-        if ( HasAttribute( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE ) )
-        {
-            if ( GetAttributeValue( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_Backstab ) == 1 )
-                if ( m_iCustom == TF_CUSTOM_BACKSTAB ) return;
-
-            if ( GetAttributeValue( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_PassiveOrActive ) == 0 )
-                m_iIntegers[m_iVictim][m_iDamageReceived] += ( RoundToFloor( m_iDamage * GetAttributeValue( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_flDamageReceivedUnleashedDeath_Percentage ) ) );
-
-            else if ( GetAttributeValue( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_PassiveOrActive ) == 1 )
-            {
-                if ( HasAttribute( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, true ) )
-                    m_iIntegers[m_iVictim][m_iDamageReceived] += ( RoundToFloor( m_iDamage * GetAttributeValue( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_flDamageReceivedUnleashedDeath_Percentage, true ) ) );
-            }
-            for ( new particles = 0 ; particles < 20.0 * ( 1.1-( FloatDiv( ( GetClientHealth( m_iVictim ) < TF2_GetClientMaxHealth( m_iVictim ) ? GetClientHealth( m_iVictim ) : TF2_GetClientMaxHealth( m_iVictim ) )+0.0, TF2_GetClientMaxHealth( m_iVictim )+0.0 ) ) ) ; particles++ )
-            {
-                new Float:w[3];
-                w[0] += GetRandomFloat( -20.0, 20.0 );
-                w[1] += GetRandomFloat( -20.0, 20.0 );
-                w[2] += GetRandomFloat( 5.0, 70.0 );
-                AttachParticle( m_iVictim, "sapper_sentry1_fx", (m_iDamage / 10)+0.0, w, w );
-            }
-            //mvm_soldier_shockwave
-        }
-    }
-    return;
 }
 
 // ====[ ON CONDITION REMOVED ]========================================
