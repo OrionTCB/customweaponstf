@@ -3,15 +3,15 @@
 
 // ====[ INCLUDES ]====================================================
 #include <sourcemod>
-#include <customweaponstf>
 #include <customweaponstf_orionstock>
+#include <cw3-attributes>
 #include <sdkhooks>
 #include <sdktools>
 #include <tf2_stocks>
 #include <tf2attributes>
 #include <tf2items>
 #include <time>
-//#include <cw3-attributes>
+//#include <customweaponstf>
 
 // ====[ CONSTANTS ]===================================================
 #define PLUGIN_VERSION                "1.04"
