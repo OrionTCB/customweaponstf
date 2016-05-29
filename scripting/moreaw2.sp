@@ -2,11 +2,11 @@
 // ====[ hi ok ]=======================================================
 // ====[ INCLUDES ]====================================================
 #include <sourcemod>
-#include <sdkhooks>
 #include <sdktools>
 #include <tf2_stocks>
-#include <tf2attributes>
 #include <tf2items>
+#include <tf2attributes>
+#include <sdkhooks>
 #include <customweaponstf>
 #include <customweaponstf_orionstock>
 #include <time>
@@ -102,28 +102,13 @@ new m_iDisableSlot_Slot[2049]                   = {0, ...};
 new bool:m_bDisarmSilent_ATTRIBUTE[2049];
 new Float:m_flDisarmSilent_Duration[2049]       = {0.0, ...};
 
-new bool:m_bSniperCombo_ATTRIBUTE[2049];
-new Float:m_flSniperCombo_DMGA[2049]            = {0.0, ...};
-new Float:m_flSniperCombo_DMGB[2049]            = {0.0, ...};
-new Float:m_flSniperCombo_DMGC[2049]            = {0.0, ...};
-
 new bool:m_bIncreasedPushScale_ATTRIBUTE[2049];
 new Float:m_flIncreasedPushScale_Scale[2049]    = {0.0, ...};
-
-new bool:m_bMissCauseDelay_ATTRIBUTE[2049];
-new Float:m_flMissCauseDelay_Delay[2049]        = {0.0, ...};
 
 new bool:m_bCritHealingMedic_ATTRIBUTE[2049];
 
 new bool:m_bDemoChargeOnHit_ATTRIBUTE[2049];
 new Float:m_flDemoChargeOnHit_Charge[2049]      = {0.0, ...};
-
-new bool:m_bPyroCombo_ATTRIBUTE[2049];
-new Float:m_flPyroCombo_DMGA[2049]              = {0.0, ...};
-new Float:m_flPyroCombo_DMGB[2049]              = {0.0, ...};
-new Float:m_flPyroCombo_DMGC[2049]              = {0.0, ...};
-
-new bool:m_bPissYourselfOnMiss_ATTRIBUTE[2049];
 
 
     /* On Crit
@@ -134,6 +119,25 @@ new Float:m_flMiniCritDisguisedCLOSERANGE_Range[2049]                   = {0.0, 
 
 new bool:m_bCritDisguisedCLOSERANGE_ATTRIBUTE[2049];
 new Float:m_flCritDisguisedCLOSERANGE_Range[2049]                       = {0.0, ...};
+
+
+    /* On Attack
+     * ---------------------------------------------------------------------- */
+
+new bool:m_bSniperCombo_ATTRIBUTE[2049];
+new Float:m_flSniperCombo_DMGA[2049]        = {0.0, ...};
+new Float:m_flSniperCombo_DMGB[2049]        = {0.0, ...};
+new Float:m_flSniperCombo_DMGC[2049]        = {0.0, ...};
+
+new bool:m_bPyroCombo_ATTRIBUTE[2049];
+new Float:m_flPyroCombo_DMGA[2049]          = {0.0, ...};
+new Float:m_flPyroCombo_DMGB[2049]          = {0.0, ...};
+new Float:m_flPyroCombo_DMGC[2049]          = {0.0, ...};
+
+new bool:m_bPissYourselfOnMiss_ATTRIBUTE[2049];
+
+new bool:m_bMissCauseDelay_ATTRIBUTE[2049];
+new Float:m_flMissCauseDelay_Delay[2049]    = {0.0, ...};
 
 
     /* On Kill
@@ -283,7 +287,7 @@ public OnPluginStart()
     HookEvent( "player_chargedeployed",      Event_ChargeDeployed );
     HookEvent( "post_inventory_application", Event_PostInventoryApplication );
 
-    HookEvent( "player_death",           Event_Death, EventHookMode_Pre );
+    HookEvent( "player_death",           Event_Death,          EventHookMode_Pre );
     HookEvent( "teamplay_restart_round", Event_OnRoundRestart, EventHookMode_Pre );
 
     new Handle:m_hSDKConfig = LoadGameConfigFile( "sdkhooks.games" );
@@ -337,8 +341,8 @@ public OnPluginEnd()
             {
                 m_bSlotDisabled[i][e]       = false;
             }
-            g_iLastWeapon[i] = -1;
-            g_pMarker[i] = -1;
+            g_iLastWeapon[i]  = -1;
+            g_pMarker[i]      = -1;
             s_bGlowEnabled[i] = false;
             SetEntProp( i, Prop_Send, "m_bGlowEnabled", 0 );
         }
@@ -368,8 +372,8 @@ public OnClientDisconnect( m_iClient )
     {
         m_bSlotDisabled[m_iClient][i] = false;
     }
-    g_iLastWeapon[m_iClient] = -1;
-    g_pMarker[m_iClient] = -1;
+    g_iLastWeapon[m_iClient]  = -1;
+    g_pMarker[m_iClient]      = -1;
     s_bGlowEnabled[m_iClient] = false;
 }
 
@@ -431,7 +435,8 @@ public Event_ChangeClass( Handle:m_hEvent, const String:m_strName[], bool:m_bDon
             s_bGlowEnabled[m_iClient] = false;
             SetEntProp( m_iClient, Prop_Send, "m_bGlowEnabled", 0 );
         }
-        g_pMarker[m_iClient] = -1;
+        g_pMarker[m_iClient]     = -1;
+        g_iLastWeapon[m_iClient] = -1;
     }
 
     return;
@@ -559,10 +564,10 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 )
         {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
             new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-            new Float:fValue = GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true );
+            new Float:fValue = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true );
 
             TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", fValue );
 
@@ -589,8 +594,8 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 )
         {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "health regen" ) ) ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
-            TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "health regen" ) ) ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
+            TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
             
             if ( !snd3[m_iClient] )
             {
@@ -615,23 +620,23 @@ ATTRIBUTE_ADDCONDALT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
     {
         if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
-        if ( !TF2_IsPlayerInCondition( m_iClient, TFCond:GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ) ) )
+        if ( !TF2_IsPlayerInCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ) ) )
         {
-            if ( GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) >= 1.0 )
+            if ( GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) >= 1.0 )
             {
-                if ( GetClientHealth( m_iClient ) > GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
+                if ( GetClientHealth( m_iClient ) > GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
                 {
-                    DealDamage( m_iClient, RoundToFloor( GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
+                    DealDamage( m_iClient, RoundToFloor( GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
 
-                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
+                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
                     EmitSoundToClient( m_iClient, SOUND_READY );
                 }
             } else {
-                if ( GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
+                if ( GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
                 {
-                    DealDamage( m_iClient, TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true )+0, m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
+                    DealDamage( m_iClient, RoundToFloor( TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
 
-                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValue( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
+                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
                     EmitSoundToClient( m_iClient, SOUND_READY );
                 }
             }
@@ -649,7 +654,7 @@ ATTRIBUTE_DEPLOYUBERCHARGE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
             if ( !TF2_IsUberchargeDeployed( m_iClient ) )
             {
-                new Float:Threshold = GetAttributeValue( m_iClient, _, m_bDeployUbercharge_ATTRIBUTE, m_flDeployUbercharge_Threshold, true );
+                new Float:Threshold = GetAttributeValueF( m_iClient, _, m_bDeployUbercharge_ATTRIBUTE, m_flDeployUbercharge_Threshold, true );
                 new Float:m_flUbercharge = TF2_GetClientUberLevel( m_iClient );
                 if ( m_flUbercharge >= Threshold ) TF2_ReleaseUbercharge( m_iClient );
             }
@@ -668,17 +673,17 @@ ATTRIBUTE_DAMAGEDONE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 ) {
                 if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
 
-                if ( !TF2_IsPlayerInCondition( m_iClient, TFCond_Ubercharged ) && m_hTimers[m_iClient][m_hDamageDone_TimerDuration] == INVALID_HANDLE && m_flFloats[m_iClient][m_flDamageCharge] >= 400.0 )
+                if ( !HasInvulnerabilityCond( m_iClient ) && m_hTimers[m_iClient][m_hDamageDone_TimerDuration] == INVALID_HANDLE && m_flFloats[m_iClient][m_flDamageCharge] >= 400.0 )
                 {
-                    m_hTimers[m_iClient][m_hDamageDone_TimerDuration] = CreateTimer( GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ), m_tDamageDone_TimerDuration, m_iClient );
-                    TF2_AddCondition( m_iClient, TFCond_Ubercharged, GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ) );
-                    TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ) );
+                    m_hTimers[m_iClient][m_hDamageDone_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ), m_tDamageDone_TimerDuration, m_iClient );
+                    TF2_AddCondition( m_iClient, TFCond_Ubercharged, GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ) );
+                    TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration, true ) );
                     EmitSoundToClient( m_iClient, SOUND_UBER );
                 }
             }
         }
         if ( m_hTimers[m_iClient][m_hDamageDone_TimerDuration] != INVALID_HANDLE ) {
-            m_flFloats[m_iClient][m_flDamageCharge] -= ( 0.75 / GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration ) );
+            m_flFloats[m_iClient][m_flDamageCharge] -= ( 0.75 / GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE, m_flLevelUpSystem_DamageDone_PocketUberchargeDuration ) );
             if ( m_flFloats[m_iClient][m_flDamageCharge] < 300 ) m_flFloats[m_iClient][m_flDamageCharge] = 300.0;
         }
 
@@ -885,9 +890,9 @@ ATTRIBUTE_MINIMANN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( m_hTimers[m_iClient][m_hMiniMann_TimerCooldown] == INVALID_HANDLE && m_hTimers[m_iClient][m_hMiniMann_TimerDelay] == INVALID_HANDLE && GetEntityFlags( m_iClient ) & FL_ONGROUND )
             {
                 m_hTimers[m_iClient][m_hMiniMann_TimerDelay] = CreateTimer( 1.2, m_tMiniMann_Delay, m_iClient );
-                m_hTimers[m_iClient][m_hMiniMann_TimerCooldown] = CreateTimer( GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Cooldown, true )+1.2, m_tMiniMann_Cooldown, m_iClient );
+                m_hTimers[m_iClient][m_hMiniMann_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Cooldown, true )+1.2, m_tMiniMann_Cooldown, m_iClient );
                 if ( m_hTimers[m_iClient][m_hMiniMann_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hMiniMann_TimerDuration] );
-                else m_hTimers[m_iClient][m_hMiniMann_TimerDuration] = CreateTimer( GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration, true )+1.2, m_tMiniMann_Duration, m_iClient );
+                else m_hTimers[m_iClient][m_hMiniMann_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration, true )+1.2, m_tMiniMann_Duration, m_iClient );
             }
         }
         if ( m_hTimers[m_iClient][m_hMiniMann_TimerDelay] != INVALID_HANDLE )
@@ -911,7 +916,7 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] == INVALID_HANDLE && m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] == INVALID_HANDLE && GetEntityFlags( m_iClient ) & FL_ONGROUND )
             {
                 m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] = CreateTimer( 1.2, m_tBonkHealth_Delay, m_iClient );
-                m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] = CreateTimer( GetAttributeValue( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown, true )+1.2, m_tBonkHealth, m_iClient );
+                m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown, true )+1.2, m_tBonkHealth, m_iClient );
             }
         }
         if ( m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] != INVALID_HANDLE )
@@ -934,7 +939,7 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             if ( m_flSpeed > 5.0 )
             {
-                new Float:m_flNewSpeed = GetAttributeValue( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Amount );
+                new Float:m_flNewSpeed = GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Amount );
                 SetEntPropFloat( m_iClient, Prop_Send, "m_flMaxspeed", m_flNewSpeed );
             }
         } else {
@@ -978,7 +983,7 @@ ATTRIBUTE_RAGEDRAIN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( m_hTimers[m_iClient][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && m_bBools[m_iClient][m_bDrainRage] )
         {
             new Float:m_flRage = GetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter" );
-            if ( m_flRage > 0.0 ) SetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter", m_flRage - GetAttributeValue( m_iClient, _, m_bRageDecrease_ATTRIBUTE, m_flRageDecrease_Amount ) );
+            if ( m_flRage > 0.0 ) SetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter", m_flRage - GetAttributeValueF( m_iClient, _, m_bRageDecrease_ATTRIBUTE, m_flRageDecrease_Amount ) );
         }
     }
 
@@ -988,7 +993,7 @@ ATTRIBUTE_RAGEDRAIN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 ATTRIBUTE_ELECTROSHOCK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bElectroshock_ATTRIBUTE ) ) {
-        if ( m_flFloats[m_iClient][m_flElectroshockEngine] >= GetEngineTime() - GetAttributeValue( m_iClient, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) )
+        if ( m_flFloats[m_iClient][m_flElectroshockEngine] >= GetEngineTime() - GetAttributeValueF( m_iClient, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) )
         {
             SetWeaponAmmo( m_iClient, 0, 0 );
             SetWeaponAmmo( m_iClient, 1, 0 );
@@ -1004,11 +1009,11 @@ ATTRIBUTE_JUMPBONUS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bJumpBonus_ATTRIBUTE ) ) {
 
         if ( m_iIntegers[m_iClient][m_iJumpAmount] < -1 ) m_iIntegers[m_iClient][m_iJumpAmount] = 0;
-        if ( m_iIntegers[m_iClient][m_iJumpAmount] > GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps ) ) m_iIntegers[m_iClient][m_iJumpAmount] = GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps );
+        if ( m_iIntegers[m_iClient][m_iJumpAmount] > GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps ) ) m_iIntegers[m_iClient][m_iJumpAmount] = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps );
         if ( m_iIntegers[m_iClient][m_iJumpAmountBase] < 0 ) m_iIntegers[m_iClient][m_iJumpAmountBase] = 0;
-        if ( m_iIntegers[m_iClient][m_iJumpAmountBase] > GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) ) m_iIntegers[m_iClient][m_iJumpAmountBase] = GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
+        if ( m_iIntegers[m_iClient][m_iJumpAmountBase] > GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) ) m_iIntegers[m_iClient][m_iJumpAmountBase] = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
 
-        if ( GetEntityFlags( m_iClient ) & FL_ONGROUND ) m_iIntegers[m_iClient][m_iJumpAmountBase] = GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
+        if ( GetEntityFlags( m_iClient ) & FL_ONGROUND ) m_iIntegers[m_iClient][m_iJumpAmountBase] = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
 
         static bool:bJumping[MAXPLAYERS+1] = false;
         static bool:bIsInJump[MAXPLAYERS+1] = false;
@@ -1021,7 +1026,7 @@ ATTRIBUTE_JUMPBONUS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
         if ( m_iButtons & IN_JUMP && !( GetEntityFlags( m_iClient ) & FL_ONGROUND ) ) // Thanks Chanz.
         {
-            if ( ( m_iIntegers[m_iClient][m_iJumpAmount] <= GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps ) ) && ( m_iIntegers[m_iClient][m_iJumpAmount] > -1 ) && ( m_iIntegers[m_iClient][m_iJumpAmountBase] <= 0 ) )
+            if ( ( m_iIntegers[m_iClient][m_iJumpAmount] <= GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps ) ) && ( m_iIntegers[m_iClient][m_iJumpAmount] > -1 ) && ( m_iIntegers[m_iClient][m_iJumpAmountBase] <= 0 ) )
             {
                 if ( !bJumping[m_iClient] )
                 {
@@ -1029,7 +1034,7 @@ ATTRIBUTE_JUMPBONUS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                     m_iIntegers[m_iClient][m_iJumpAmount]--;
                 }
             }
-            else if ( ( m_iIntegers[m_iClient][m_iJumpAmountBase] <= GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) ) && ( m_iIntegers[m_iClient][m_iJumpAmountBase] > 0 ) )
+            else if ( ( m_iIntegers[m_iClient][m_iJumpAmountBase] <= GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) ) && ( m_iIntegers[m_iClient][m_iJumpAmountBase] > 0 ) )
             {
                 if ( !bJumping[m_iClient] ) m_iIntegers[m_iClient][m_iJumpAmountBase]--;
             }
@@ -1039,7 +1044,7 @@ ATTRIBUTE_JUMPBONUS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             bIsInJump[m_iClient] = false;
         }
 
-        if ( GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) == 1 && !( bIsInJump[m_iClient] ) ) SetEntData( m_iClient, m_iDashOffSet, 1 );
+        if ( GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps ) == 1 && !( bIsInJump[m_iClient] ) ) SetEntData( m_iClient, m_iDashOffSet, 1 );
         if ( bIsInJump[m_iClient] && m_iIntegers[m_iClient][m_iJumpAmount] > -1 ) SetEntData( m_iClient, m_iDashOffSet, 0 );
         if ( m_iIntegers[m_iClient][m_iJumpAmount] == 0 ) bIsInJump[m_iClient] = false;
     }
@@ -1090,10 +1095,10 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
 
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValue( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
+            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
+            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true ) );
+            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
+            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
         }
     }
 //-//
@@ -1114,15 +1119,18 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bJumpBonus_ATTRIBUTE ) )
     {
         /* ** Hacky way to display correct jumps because the Unique Base Jump make the 'last' ( 1/max ) not used, Idk why, but that's not a big deal. ** */
-        new BaseJumps = GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
-        new Jumps;
-        if ( m_iIntegers[m_iClient][m_iJumpAmount]-( BaseJumps == 1 ? 1 : 0 ) < 1 ) Jumps = 0;
-        else Jumps = m_iIntegers[m_iClient][m_iJumpAmount]-( BaseJumps == 1 ? 1 : 0 );
+        new BaseJumps = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_BaseJumps );
+        new BaseJumps2 = ( BaseJumps == 1 ? 1 : 0 );
+        new Diff = m_iIntegers[m_iClient][m_iJumpAmount] - BaseJumps2;
+        if ( Diff < 0 ) Diff = 0;
+        //new Jumps;
+        //else Jumps = Diff;
         /* ** ! ** */
-        if ( GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps ) >= 1024 ) {
-            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i", Jumps );
+        new MaxJumps = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps );
+        if ( MaxJumps >= 1024 ) {
+            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i", Diff/*Jumps*/ );
         } else {
-            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i/%i", Jumps, GetAttributeValue( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps )-( BaseJumps == 1 ? 1 : 0 ) );
+            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i/%i", Diff/*Jumps*/, MaxJumps-BaseJumps2 );
         }
     }
 //-//
@@ -1617,7 +1625,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
         && !HasInvulnerabilityCond( m_iVictim )
         && m_iAttacker != m_iVictim )
     {
-        if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 && GetAttributeValue( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance, true ) == 0.0 ) {
+        if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 && GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance, true ) == 0.0 ) {
             if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
                 m_flDamage = 0.0;
         }
@@ -1632,7 +1640,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     {
                         EmitSoundToAll( SOUND_VO_HEAVY_I_LIVE, m_iVictim, _, SNDLEVEL_SCREAMING );
                         EmitSoundToClient( m_iVictim, SOUND_UBER, _, _, SNDLEVEL_SCREAMING );
-                        TF2_AddCondition( m_iVictim, TFCond_Ubercharged, GetAttributeValue( m_iVictim, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) );
+                        TF2_AddCondition( m_iVictim, TFCond_Ubercharged, GetAttributeValueF( m_iVictim, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) );
                         SetWeaponAmmo( m_iVictim, 0, 0 );
                         SetWeaponAmmo( m_iVictim, 1, 0 );
                         TF2_SetClientSlot( m_iVictim, 2 );
@@ -1718,7 +1726,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                         {
                             if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
                             {
-                                if ( !TF2_IsPlayerInCondition( i, TFCond_Ubercharged ) )
+                                if ( !HasInvulnerabilityCond( i ) )
                                 {
                                     new Float:flPos2[3];
                                     GetClientEyePosition( i, flPos2 );
@@ -1871,7 +1879,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
             }
 
             if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 ) {
-                if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) ) m_flDamage *= GetAttributeValue( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance );
+                if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) ) m_flDamage *= GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance );
             }
             if ( HasAttribute( m_iVictim, _, m_bMetalShield_ATTRIBUTE ) )
             {
@@ -1879,9 +1887,9 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 
                 if ( metal > 0 )
                 {
-                    new Float:metal_lost = m_flDamage * GetAttributeValue( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorb ) * GetAttributeValue( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorbMetalPct );
-                    m_flDamage *= ( 1 - GetAttributeValue( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorb ) );
-                    if ( metal_lost > metal ) m_flDamage += ( ( metal_lost / GetAttributeValue( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorbMetalPct ) ) - metal );
+                    new Float:metal_lost = m_flDamage * GetAttributeValueF( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorb ) * GetAttributeValueF( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorbMetalPct );
+                    m_flDamage *= ( 1 - GetAttributeValueF( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorb ) );
+                    if ( metal_lost > metal ) m_flDamage += ( ( metal_lost / GetAttributeValueF( m_iVictim, _, m_bMetalShield_ATTRIBUTE, m_flMetalShield_DamageAbsorbMetalPct ) ) - metal );
 
                     TF2_SetClientMetal( m_iVictim, RoundToFloor( metal - metal_lost ) );
                     metal = TF2_GetClientMetal( m_iVictim );
@@ -1906,44 +1914,47 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
         && IsValidClient( m_iVictim )
         && !HasInvulnerabilityCond( m_iVictim ) )
     {
-        if ( HasAttribute( m_iVictim, _, m_bMiniMann_ATTRIBUTE ) && m_hTimers[m_iVictim][m_hMiniMann_TimerDuration] != INVALID_HANDLE )
+        if ( m_iVictim != m_iAttacker )
         {
-            if ( GetAttributeValue( m_iVictim, _, m_bMiniMann_ATTRIBUTE, m_iMiniMann_Type ) == 2 ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
-            else {
-                if ( m_iType & TF_DMG_BLAST || m_iType & TF_DMG_FIRE || m_iType & TF_DMG_AFTERBURN ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
+            if ( HasAttribute( m_iVictim, _, m_bMiniMann_ATTRIBUTE ) && m_hTimers[m_iVictim][m_hMiniMann_TimerDuration] != INVALID_HANDLE )
+            {
+                if ( GetAttributeValueI( m_iVictim, _, m_bMiniMann_ATTRIBUTE, m_iMiniMann_Type ) == 2 ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
+                else {
+                    if ( m_iType & TF_DMG_BLAST || m_iType & TF_DMG_FIRE || m_iType & TF_DMG_AFTERBURN ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
+                }
             }
-        }
-    //-//
-        if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
-        {
-            new Float:m_flValue;
-            m_flValue = m_flDamage * GetAttributeValue( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_Charge ) * 0.01;
+        //-//
+            if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
+            {
+                new Float:m_flValue;
+                m_flValue = m_flDamage * GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_Charge ) * 0.01;
 
-            if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 100.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += m_flValue;
-            else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 200.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 100.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 1.5 );
-            else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 300.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 200.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 2.25 );
-            else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 400.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 300.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 3.0 );
+                if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 100.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += m_flValue;
+                else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 200.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 100.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 1.5 );
+                else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 300.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 200.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 2.25 );
+                else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 400.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 300.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 3.0 );
 
-            if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 0.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 0.0;
-            if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] > 400.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 400.0;
-        }
-    //-//
-        if ( HasAttribute( m_iAttacker, _, m_bRespawnWhereYouDied_ATTRIBUTE ) )
-        {
-            new Float:m_flCharge = m_flDamage * GetAttributeValue( m_iAttacker, _, m_bRespawnWhereYouDied_ATTRIBUTE, m_flRespawnWhereYouDied_Charge ) * 0.01;
-            m_flFloats[m_iAttacker][m_flRespawn] += m_flCharge;
+                if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 0.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 0.0;
+                if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] > 400.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 400.0;
+            }
+        //-//
+            if ( HasAttribute( m_iAttacker, _, m_bRespawnWhereYouDied_ATTRIBUTE ) )
+            {
+                new Float:m_flCharge = m_flDamage * GetAttributeValueF( m_iAttacker, _, m_bRespawnWhereYouDied_ATTRIBUTE, m_flRespawnWhereYouDied_Charge ) * 0.01;
+                m_flFloats[m_iAttacker][m_flRespawn] += m_flCharge;
 
-            if ( m_flFloats[m_iAttacker][m_flRespawn] > 100.0 ) m_flFloats[m_iAttacker][m_flRespawn] = 100.0;
-            if ( m_flFloats[m_iAttacker][m_flRespawn] < 0.0 ) m_flFloats[m_iAttacker][m_flRespawn] = 0.0;
-        }
-    //-//
-        if ( HasAttribute( m_iAttacker, _, m_bElectroshock_ATTRIBUTE ) )
-        {
-            new Float:m_flValue = m_flDamage * GetAttributeValue( m_iAttacker, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Charge ) * 0.01;
-            m_flFloats[m_iAttacker][m_flElectroshock] += m_flValue;
+                if ( m_flFloats[m_iAttacker][m_flRespawn] > 100.0 ) m_flFloats[m_iAttacker][m_flRespawn] = 100.0;
+                if ( m_flFloats[m_iAttacker][m_flRespawn] < 0.0 ) m_flFloats[m_iAttacker][m_flRespawn] = 0.0;
+            }
+        //-//
+            if ( HasAttribute( m_iAttacker, _, m_bElectroshock_ATTRIBUTE ) )
+            {
+                new Float:m_flValue = m_flDamage * GetAttributeValueF( m_iAttacker, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Charge ) * 0.01;
+                m_flFloats[m_iAttacker][m_flElectroshock] += m_flValue;
 
-            if ( m_flFloats[m_iAttacker][m_flElectroshock] > 100.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 100.0;
-            if ( m_flFloats[m_iAttacker][m_flElectroshock] < 0.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 0.0;
+                if ( m_flFloats[m_iAttacker][m_flElectroshock] > 100.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 100.0;
+                if ( m_flFloats[m_iAttacker][m_flElectroshock] < 0.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 0.0;
+            }
         }
 
         if ( m_iWeapon != -1
@@ -2181,7 +2192,7 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
                 {
                     if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
                     {
-                        if ( !TF2_IsPlayerInCondition( i, TFCond_Ubercharged ) )
+                        if ( !HasInvulnerabilityCond( i ) )
                         {
                             new Float:flPos2[3];
                             GetClientEyePosition( i, flPos2 );
@@ -2285,7 +2296,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
             // ATTRIBUTE
             if ( HasAttribute( m_iVictim, _, m_bRespawnWhereYouDied_ATTRIBUTE ) && m_flFloats[m_iVictim][m_flRespawn] == 100.0 )
             {
-                CreateTimer( GetAttributeValue( m_iVictim, _, m_bRespawnWhereYouDied_ATTRIBUTE, m_flRespawnWhereYouDied_Delay ), m_tRespawnWhereYouDied, m_iVictim );
+                CreateTimer( GetAttributeValueF( m_iVictim, _, m_bRespawnWhereYouDied_ATTRIBUTE, m_flRespawnWhereYouDied_Delay ), m_tRespawnWhereYouDied, m_iVictim );
             }
             if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] != INVALID_HANDLE )
             {
@@ -2341,192 +2352,200 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
     return Plugin_Continue;
 }
 
+// ====[ ON ENTITY DESTROYED ]=========================================
 public OnEntityDestroyed( m_iEntity )
 {
     if ( m_iEntity <= 0 || m_iEntity > 2048 ) return;
-    m_bHasAttribute[m_iEntity] = false;
+    if ( m_bHasAttribute[m_iEntity] ) // I use this, so it doesn't call on every ENTITY destroyed, just custom weapons.
+    {
+        m_bHasAttribute[m_iEntity] = false;
 
 
-    /* On Hit
-     * ---------------------------------------------------------------------- */
+        /* On Hit
+         * ---------------------------------------------------------------------- */
 
-    m_bMarkVictim_ATTRIBUTE[m_iEntity]              = false;
-    m_flMarkVictim_Duration[m_iEntity]              = 0.0;
-    m_iMarkVictim_MaximumStack[m_iEntity]           = 0;
+        m_bMarkVictim_ATTRIBUTE[m_iEntity]              = false;
+        m_flMarkVictim_Duration[m_iEntity]              = 0.0;
+        m_iMarkVictim_MaximumStack[m_iEntity]           = 0;
 
-    m_bMarkVictimForDeath_ATTRIBUTE[m_iEntity]      = false;
-    m_flMarkVictimForDeath_Duration[m_iEntity]      = 0.0;
-    m_iMarkVictimForDeath_MaximumStack[m_iEntity]   = 0;
+        m_bMarkVictimForDeath_ATTRIBUTE[m_iEntity]      = false;
+        m_flMarkVictimForDeath_Duration[m_iEntity]      = 0.0;
+        m_iMarkVictimForDeath_MaximumStack[m_iEntity]   = 0;
 
-    m_bDisableSlot_ATTRIBUTE[m_iEntity]             = false;
-    m_flDisableSlot_Duration[m_iEntity]             = 0.0;
-    m_iDisableSlot_Slot[m_iEntity]                  = 0;
+        m_bDisableSlot_ATTRIBUTE[m_iEntity]             = false;
+        m_flDisableSlot_Duration[m_iEntity]             = 0.0;
+        m_iDisableSlot_Slot[m_iEntity]                  = 0;
 
-    m_bDisarmSilent_ATTRIBUTE[m_iEntity]            = false;
-    m_flDisarmSilent_Duration[m_iEntity]            = 0.0;
+        m_bDisarmSilent_ATTRIBUTE[m_iEntity]            = false;
+        m_flDisarmSilent_Duration[m_iEntity]            = 0.0;
 
-    m_bSniperCombo_ATTRIBUTE[m_iEntity]             = false;
-    m_flSniperCombo_DMGA[m_iEntity]                 = 0.0;
-    m_flSniperCombo_DMGB[m_iEntity]                 = 0.0;
-    m_flSniperCombo_DMGC[m_iEntity]                 = 0.0;
+        m_bIncreasedPushScale_ATTRIBUTE[m_iEntity]      = false;
+        m_flIncreasedPushScale_Scale[m_iEntity]         = 0.0;
 
-    m_bIncreasedPushScale_ATTRIBUTE[m_iEntity]      = false;
-    m_flIncreasedPushScale_Scale[m_iEntity]         = 0.0;
+        m_bCritHealingMedic_ATTRIBUTE[m_iEntity]        = false;
 
-    m_bMissCauseDelay_ATTRIBUTE[m_iEntity]          = false;
-    m_flMissCauseDelay_Delay[m_iEntity]             = 0.0;
-
-    m_bCritHealingMedic_ATTRIBUTE[m_iEntity]        = false;
-
-    m_bDemoChargeOnHit_ATTRIBUTE[m_iEntity]         = false;
-    m_flDemoChargeOnHit_Charge[m_iEntity]           = 0.0;
-
-    m_bPyroCombo_ATTRIBUTE[m_iEntity]               = false;
-    m_flPyroCombo_DMGA[m_iEntity]                   = 0.0;
-    m_flPyroCombo_DMGB[m_iEntity]                   = 0.0;
-    m_flPyroCombo_DMGC[m_iEntity]                   = 0.0;
-
-    m_bPissYourselfOnMiss_ATTRIBUTE[m_iEntity]      = false;
+        m_bDemoChargeOnHit_ATTRIBUTE[m_iEntity]         = false;
+        m_flDemoChargeOnHit_Charge[m_iEntity]           = 0.0;
 
 
-    /* On Crit
-     * ---------------------------------------------------------------------- */
+        /* On Crit
+         * ---------------------------------------------------------------------- */
 
-    m_bMiniCritDisguisedCLOSERANGE_ATTRIBUTE[m_iEntity] = false;
-    m_flMiniCritDisguisedCLOSERANGE_Range[m_iEntity]    = 0.0;
+        m_bMiniCritDisguisedCLOSERANGE_ATTRIBUTE[m_iEntity] = false;
+        m_flMiniCritDisguisedCLOSERANGE_Range[m_iEntity]    = 0.0;
 
-    m_bCritDisguisedCLOSERANGE_ATTRIBUTE[m_iEntity]     = false;
-    m_flCritDisguisedCLOSERANGE_Range[m_iEntity]        = 0.0;
-
-
-    /* On Kill
-     * ---------------------------------------------------------------------- */
-
-    m_bUberchargeOnKill_ATTRIBUTE[m_iEntity]    = false;
-    m_flUberchargeOnKill_Amount[m_iEntity]      = 0.0;
+        m_bCritDisguisedCLOSERANGE_ATTRIBUTE[m_iEntity]     = false;
+        m_flCritDisguisedCLOSERANGE_Range[m_iEntity]        = 0.0;
 
 
-    /* On Damage
-     * ---------------------------------------------------------------------- */
+        /* On Attack
+         * ---------------------------------------------------------------------- */
 
-    m_bUberchargeToDamage_ATTRIBUTE[m_iEntity]                          = false;
-    m_flUberchargeToDamage_Multiplier[m_iEntity]                        = 0.0;
+        m_bSniperCombo_ATTRIBUTE[m_iEntity]         = false;
+        m_flSniperCombo_DMGA[m_iEntity]             = 0.0;
+        m_flSniperCombo_DMGB[m_iEntity]             = 0.0;
+        m_flSniperCombo_DMGC[m_iEntity]             = 0.0;
 
-    m_bEnemyUberchargeToDamage_ATTRIBUTE[m_iEntity]                     = false;
-    m_flEnemyUberchargeToDamage_Multiplier[m_iEntity]                   = 0.0;
+        m_bPyroCombo_ATTRIBUTE[m_iEntity]           = false;
+        m_flPyroCombo_DMGA[m_iEntity]               = 0.0;
+        m_flPyroCombo_DMGB[m_iEntity]               = 0.0;
+        m_flPyroCombo_DMGC[m_iEntity]               = 0.0;
 
-    m_bExplosiveDamage_ATTRIBUTE[m_iEntity]                             = false;
-    m_flExplosiveDamage_Damage[m_iEntity]                               = 0.0;
-    m_flExplosiveDamage_Force[m_iEntity]                                = 0.0;
-    m_flExplosiveDamage_Radius[m_iEntity]                               = 0.0;
-    m_iExplosiveDamage_DamageMode[m_iEntity]                            = 0;
+        m_bPissYourselfOnMiss_ATTRIBUTE[m_iEntity]  = false;
 
-    m_bExplosiveCriticalDamage_ATTRIBUTE[m_iEntity]                     = false;
-    m_flExplosiveCriticalDamage_Damage[m_iEntity]                       = 0.0;
-    m_flExplosiveCriticalDamage_Force[m_iEntity]                        = 0.0;
-    m_flExplosiveCriticalDamage_Radius[m_iEntity]                       = 0.0;
-    m_iExplosiveCriticalDamage_DamageMode[m_iEntity]                    = 0;
-
-    m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iEntity]                    = false;
-    m_flLevelUpSystem_DamageDone_BonusDamage[m_iEntity]                 = 0.0;
-    m_flLevelUpSystem_DamageDone_Charge[m_iEntity]                      = 0.0;
-    m_flLevelUpSystem_DamageDone_CriticalChance[m_iEntity]              = 0.0;
-    m_flLevelUpSystem_DamageDone_Lifesteal[m_iEntity]                   = 0.0;
-    m_flLevelUpSystem_DamageDone_PocketUberchargeDuration[m_iEntity]    = 0.0;
-
-    m_bNonCriticalDamageModifier_ATTRIBUTE[m_iEntity]                   = false;
-    m_flNonCriticalDamageModifier_Multiplier[m_iEntity]                 = 0.0;
-
-    m_bFlyWhileShooting_ATTRIBUTE[m_iEntity]                            = false;
-
-    m_bDisorientateOnHit_ATTRIBUTE[m_iEntity]                           = false;
-
-    m_bNoBackstab_ATTRIBUTE[m_iEntity]                                  = false;
-    m_flNoBackstab_Damage[m_iEntity]                                    = 0.0;
-
-    m_bElectroshock_ATTRIBUTE[m_iEntity]                                = false;
-    m_flElectroshock_Charge[m_iEntity]                                  = 0.0;
-    m_flElectroshock_Duration[m_iEntity]                                = 0.0;
+        m_bMissCauseDelay_ATTRIBUTE[m_iEntity]      = false;
+        m_flMissCauseDelay_Delay[m_iEntity]         = 0.0;
 
 
-    /* On Prethink
-     * ---------------------------------------------------------------------- */
+        /* On Kill
+         * ---------------------------------------------------------------------- */
 
-    m_bSpeedCloak_ATTRIBUTE[m_iEntity]                      = false;
-    m_flSpeedCloak_Amount[m_iEntity]                        = 0.0;
-
-    m_bDemoCharge_Ubercharge_ATTRIBUTE[m_iEntity]           = false;
-
-    m_bDemoCharge_Invisibility_ATTRIBUTE[m_iEntity]         = false;
-
-    m_bCritOnHealthPointsThreshold_ATTRIBUTE[m_iEntity]     = false;
-    m_flCritOnHealthPointsThreshold_Threshold[m_iEntity]    = 0.0;
-
-    m_bSpeedBoostFire_ATTRIBUTE[m_iEntity]                  = false;
-
-    m_bRageDecrease_ATTRIBUTE[m_iEntity]                    = false;
-    m_flRageDecrease_Amount[m_iEntity]                      = 0.0;
-
-    m_bDisableAlt_ATTRIBUTE[m_iEntity]                      = false;
-
-    m_bDisablePrimAlt_ATTRIBUTE[m_iEntity]                  = false;
-
-    m_bJumpBonus_ATTRIBUTE[m_iEntity]                       = false;
-    m_iJumpBonus_BaseJumps[m_iEntity]                       = 0;
-    m_iJumpBonus_Hit[m_iEntity]                             = 0;
-    m_iJumpBonus_Kill[m_iEntity]                            = 0;
-    m_iJumpBonus_MaxJumps[m_iEntity]                        = 0;
-
-    m_bChargedAirblast_SOUNDONLY_ATTRIBUTE[m_iEntity]       = false;
+        m_bUberchargeOnKill_ATTRIBUTE[m_iEntity]    = false;
+        m_flUberchargeOnKill_Amount[m_iEntity]      = 0.0;
 
 
-    /* On Damage Received
-     * ---------------------------------------------------------------------- */
+        /* On Damage
+         * ---------------------------------------------------------------------- */
 
-    m_bLevelUpSystem_DamageReceived_ATTRIBUTE[m_iEntity]                    = false;
-    m_flLevelUpSystem_DamageReceived_AttackSpeed[m_iEntity]                 = 0.0;
-    m_flLevelUpSystem_DamageReceived_Charge[m_iEntity]                      = 0.0;
-    m_flLevelUpSystem_DamageReceived_CriticalDamageResistance[m_iEntity]    = 0.0;
-    m_flLevelUpSystem_DamageReceived_HealthRegeneration[m_iEntity]          = 0.0;
-    m_flLevelUpSystem_DamageReceived_Lifesteal[m_iEntity]                   = 0.0;
-    m_flLevelUpSystem_DamageReceived_OldAttackSpeed[m_iEntity]              = 0.0;
-    m_flLevelUpSystem_DamageReceived_OldHealthRegeneration[m_iEntity]       = 0.0;
+        m_bUberchargeToDamage_ATTRIBUTE[m_iEntity]                          = false;
+        m_flUberchargeToDamage_Multiplier[m_iEntity]                        = 0.0;
 
-    m_bMetalShield_ATTRIBUTE[m_iEntity]                                     = false;
-    m_flMetalShield_DamageAbsorb[m_iEntity]                                 = 0.0;
-    m_flMetalShield_DamageAbsorbMetalPct[m_iEntity]                         = 0.0;
+        m_bEnemyUberchargeToDamage_ATTRIBUTE[m_iEntity]                     = false;
+        m_flEnemyUberchargeToDamage_Multiplier[m_iEntity]                   = 0.0;
+
+        m_bExplosiveDamage_ATTRIBUTE[m_iEntity]                             = false;
+        m_flExplosiveDamage_Damage[m_iEntity]                               = 0.0;
+        m_flExplosiveDamage_Force[m_iEntity]                                = 0.0;
+        m_flExplosiveDamage_Radius[m_iEntity]                               = 0.0;
+        m_iExplosiveDamage_DamageMode[m_iEntity]                            = 0;
+
+        m_bExplosiveCriticalDamage_ATTRIBUTE[m_iEntity]                     = false;
+        m_flExplosiveCriticalDamage_Damage[m_iEntity]                       = 0.0;
+        m_flExplosiveCriticalDamage_Force[m_iEntity]                        = 0.0;
+        m_flExplosiveCriticalDamage_Radius[m_iEntity]                       = 0.0;
+        m_iExplosiveCriticalDamage_DamageMode[m_iEntity]                    = 0;
+
+        m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iEntity]                    = false;
+        m_flLevelUpSystem_DamageDone_BonusDamage[m_iEntity]                 = 0.0;
+        m_flLevelUpSystem_DamageDone_Charge[m_iEntity]                      = 0.0;
+        m_flLevelUpSystem_DamageDone_CriticalChance[m_iEntity]              = 0.0;
+        m_flLevelUpSystem_DamageDone_Lifesteal[m_iEntity]                   = 0.0;
+        m_flLevelUpSystem_DamageDone_PocketUberchargeDuration[m_iEntity]    = 0.0;
+
+        m_bNonCriticalDamageModifier_ATTRIBUTE[m_iEntity]                   = false;
+        m_flNonCriticalDamageModifier_Multiplier[m_iEntity]                 = 0.0;
+
+        m_bFlyWhileShooting_ATTRIBUTE[m_iEntity]                            = false;
+
+        m_bDisorientateOnHit_ATTRIBUTE[m_iEntity]                           = false;
+
+        m_bNoBackstab_ATTRIBUTE[m_iEntity]                                  = false;
+        m_flNoBackstab_Damage[m_iEntity]                                    = 0.0;
+
+        m_bElectroshock_ATTRIBUTE[m_iEntity]                                = false;
+        m_flElectroshock_Charge[m_iEntity]                                  = 0.0;
+        m_flElectroshock_Duration[m_iEntity]                                = 0.0;
 
 
-    /* To Activate
-     * ---------------------------------------------------------------------- */
+        /* On Prethink
+         * ---------------------------------------------------------------------- */
 
-    m_bAddCondAltFire_ATTRIBUTE[m_iEntity]      = false;
-    m_flAddCondAltFire_Duration[m_iEntity]      = 0.0;
-    m_flAddCondAltFire_HealthPoints[m_iEntity]  = 0.0;
-    m_iAddCondAltFire_ID[m_iEntity]             = 0;
+        m_bSpeedCloak_ATTRIBUTE[m_iEntity]                      = false;
+        m_flSpeedCloak_Amount[m_iEntity]                        = 0.0;
 
-    m_bMiniMann_ATTRIBUTE[m_iEntity]            = false;
-    m_flMiniMann_Cooldown[m_iEntity]            = 0.0;
-    m_flMiniMann_Duration[m_iEntity]            = 0.0;
-    m_flMiniMann_Resize[m_iEntity]              = 0.0;
-    m_iMiniMann_Speed[m_iEntity]                = 0;
-    m_iMiniMann_Type[m_iEntity]                 = 0;
+        m_bDemoCharge_Ubercharge_ATTRIBUTE[m_iEntity]           = false;
 
-    m_bDeployUbercharge_ATTRIBUTE[m_iEntity]    = false;
-    m_flDeployUbercharge_Threshold[m_iEntity]   = 0.0;
+        m_bDemoCharge_Invisibility_ATTRIBUTE[m_iEntity]         = false;
 
-    m_bBonkHealth_ATTRIBUTE[m_iEntity]          = false;
-    m_flBonkHealth_Cooldown[m_iEntity]          = 0.0;
-    m_flBonkHealth_Heal[m_iEntity]              = 0.0;
-    m_flBonkHealth_OverHealBonusCap[m_iEntity]  = 0.0;
+        m_bCritOnHealthPointsThreshold_ATTRIBUTE[m_iEntity]     = false;
+        m_flCritOnHealthPointsThreshold_Threshold[m_iEntity]    = 0.0;
+
+        m_bSpeedBoostFire_ATTRIBUTE[m_iEntity]                  = false;
+
+        m_bRageDecrease_ATTRIBUTE[m_iEntity]                    = false;
+        m_flRageDecrease_Amount[m_iEntity]                      = 0.0;
+
+        m_bDisableAlt_ATTRIBUTE[m_iEntity]                      = false;
+
+        m_bDisablePrimAlt_ATTRIBUTE[m_iEntity]                  = false;
+
+        m_bJumpBonus_ATTRIBUTE[m_iEntity]                       = false;
+        m_iJumpBonus_BaseJumps[m_iEntity]                       = 0;
+        m_iJumpBonus_Hit[m_iEntity]                             = 0;
+        m_iJumpBonus_Kill[m_iEntity]                            = 0;
+        m_iJumpBonus_MaxJumps[m_iEntity]                        = 0;
+
+        m_bChargedAirblast_SOUNDONLY_ATTRIBUTE[m_iEntity]       = false;
 
 
-    /* On Death
-     * ---------------------------------------------------------------------- */
+        /* On Damage Received
+         * ---------------------------------------------------------------------- */
 
-    m_bRespawnWhereYouDied_ATTRIBUTE[m_iEntity] = false;
-    m_flRespawnWhereYouDied_Charge[m_iEntity]   = 0.0;
-    m_flRespawnWhereYouDied_Delay[m_iEntity]    = 0.0;
+        m_bLevelUpSystem_DamageReceived_ATTRIBUTE[m_iEntity]                    = false;
+        m_flLevelUpSystem_DamageReceived_AttackSpeed[m_iEntity]                 = 0.0;
+        m_flLevelUpSystem_DamageReceived_Charge[m_iEntity]                      = 0.0;
+        m_flLevelUpSystem_DamageReceived_CriticalDamageResistance[m_iEntity]    = 0.0;
+        m_flLevelUpSystem_DamageReceived_HealthRegeneration[m_iEntity]          = 0.0;
+        m_flLevelUpSystem_DamageReceived_Lifesteal[m_iEntity]                   = 0.0;
+        m_flLevelUpSystem_DamageReceived_OldAttackSpeed[m_iEntity]              = 0.0;
+        m_flLevelUpSystem_DamageReceived_OldHealthRegeneration[m_iEntity]       = 0.0;
+
+        m_bMetalShield_ATTRIBUTE[m_iEntity]                                     = false;
+        m_flMetalShield_DamageAbsorb[m_iEntity]                                 = 0.0;
+        m_flMetalShield_DamageAbsorbMetalPct[m_iEntity]                         = 0.0;
+
+
+        /* To Activate
+         * ---------------------------------------------------------------------- */
+
+        m_bAddCondAltFire_ATTRIBUTE[m_iEntity]      = false;
+        m_flAddCondAltFire_Duration[m_iEntity]      = 0.0;
+        m_flAddCondAltFire_HealthPoints[m_iEntity]  = 0.0;
+        m_iAddCondAltFire_ID[m_iEntity]             = 0;
+
+        m_bMiniMann_ATTRIBUTE[m_iEntity]            = false;
+        m_flMiniMann_Cooldown[m_iEntity]            = 0.0;
+        m_flMiniMann_Duration[m_iEntity]            = 0.0;
+        m_flMiniMann_Resize[m_iEntity]              = 0.0;
+        m_iMiniMann_Speed[m_iEntity]                = 0;
+        m_iMiniMann_Type[m_iEntity]                 = 0;
+
+        m_bDeployUbercharge_ATTRIBUTE[m_iEntity]    = false;
+        m_flDeployUbercharge_Threshold[m_iEntity]   = 0.0;
+
+        m_bBonkHealth_ATTRIBUTE[m_iEntity]          = false;
+        m_flBonkHealth_Cooldown[m_iEntity]          = 0.0;
+        m_flBonkHealth_Heal[m_iEntity]              = 0.0;
+        m_flBonkHealth_OverHealBonusCap[m_iEntity]  = 0.0;
+
+
+        /* On Death
+         * ---------------------------------------------------------------------- */
+
+        m_bRespawnWhereYouDied_ATTRIBUTE[m_iEntity] = false;
+        m_flRespawnWhereYouDied_Charge[m_iEntity]   = 0.0;
+        m_flRespawnWhereYouDied_Delay[m_iEntity]    = 0.0;
+    }
 }
 // -
 // --
@@ -2566,16 +2585,16 @@ public Action:m_tMiniMann_Delay( Handle:timer, any:m_iClient )
 {
     if ( HasAttribute( m_iClient, _, m_bMiniMann_ATTRIBUTE ) )
     {
-        if ( GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_iMiniMann_Speed ) == 1 )
-            TF2_AddCondition( m_iClient, TFCond_SpeedBuffAlly, GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration ) );
+        if ( GetAttributeValueI( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_iMiniMann_Speed ) == 1 )
+            TF2_AddCondition( m_iClient, TFCond_SpeedBuffAlly, GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration ) );
 
-        new Float:m_flSize = GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Resize );
+        new Float:m_flSize = GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Resize );
         if ( m_flSize < 0.25 ) m_flSize = 0.25;
         if ( m_flSize > 2.0 ) m_flSize = 2.0;
         SetEntPropFloat( m_iClient, Prop_Send, "m_flModelScale", m_flSize );
 
         new secondary = GetPlayerWeaponSlot( m_iClient, TFWeaponSlot_Secondary );
-        if ( IsValidEntity( secondary ) ) SetEntPropFloat( secondary, Prop_Send, "m_flEffectBarRegenTime", GetGameTime() + GetAttributeValue( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Cooldown ) );
+        if ( IsValidEntity( secondary ) ) SetEntPropFloat( secondary, Prop_Send, "m_flEffectBarRegenTime", GetGameTime() + GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Cooldown ) );
     }
     m_hTimers[m_iClient][m_hMiniMann_TimerDelay] = INVALID_HANDLE;
 }
@@ -2661,10 +2680,10 @@ public Action:m_tBonkHealth_Delay( Handle:timer, any:m_iClient )
 {
     if ( HasAttribute( m_iClient, _, m_bBonkHealth_ATTRIBUTE ) )
     {
-        TF2_HealPlayer( m_iClient, GetAttributeValue( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Heal ), GetAttributeValue( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_OverHealBonusCap ) );
+        TF2_HealPlayer( m_iClient, GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Heal ), GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_OverHealBonusCap ) );
 
         new secondary = GetPlayerWeaponSlot( m_iClient, TFWeaponSlot_Secondary );
-        if ( IsValidEntity( secondary ) ) SetEntPropFloat( secondary, Prop_Send, "m_flEffectBarRegenTime", GetGameTime() + GetAttributeValue( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown ) );
+        if ( IsValidEntity( secondary ) ) SetEntPropFloat( secondary, Prop_Send, "m_flEffectBarRegenTime", GetGameTime() + GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown ) );
     }
 
     m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] = INVALID_HANDLE;
@@ -2689,7 +2708,7 @@ public Action:m_tMissCauseDelay_TimerDelay( Handle:timer, Handle:m_hData04 )
     {
         if ( IsValidClient( m_iClient ) )
         {
-            new Float:m_flDelay = GetAttributeValue( m_iClient, _, m_bMissCauseDelay_ATTRIBUTE, m_flMissCauseDelay_Delay );
+            new Float:m_flDelay = GetAttributeValueF( m_iClient, _, m_bMissCauseDelay_ATTRIBUTE, m_flMissCauseDelay_Delay );
             MakeSlotSleep( m_iClient, m_iClient, m_iSlot, m_flDelay, false );
             m_bBools[m_iClient][m_bLastWasMiss] = true;
         }
@@ -2797,7 +2816,7 @@ bool:HasAttribute( client, slot = -1, const attribute[] = m_bHasAttribute, bool:
     
     return false;
 }
-any:GetAttributeValue( client, slot = -1, const bool:baseAttribute[], const any:attribute[], bool:active = false )
+Float:GetAttributeValueF( client, slot = -1, const bool:baseAttribute[], const Float:attribute[], bool:active = false )
 {
     if ( !IsValidClient( client ) ) return 0.0;
     
@@ -2807,7 +2826,7 @@ any:GetAttributeValue( client, slot = -1, const bool:baseAttribute[], const any:
             if ( weapon != -1 ) {
                 if ( m_bHasAttribute[weapon] ) {
                     if ( baseAttribute[weapon] ) {
-                        if ( slot == -1 || slot == i )  return attribute[weapon];
+                        if ( slot == -1 || slot == i ) return attribute[weapon];
         }}}}
     }
     if ( active ) {
@@ -2821,4 +2840,29 @@ any:GetAttributeValue( client, slot = -1, const bool:baseAttribute[], const any:
     }
     
     return 0.0;
+}
+GetAttributeValueI( client, slot = -1, const bool:baseAttribute[], const attribute[], bool:active = false )
+{
+    if ( !IsValidClient( client ) ) return 0;
+    
+    if ( !active ) {
+        for ( new i = 0; i <= 4; i++ ) {
+            new weapon = GetPlayerWeaponSlot( client, i );
+            if ( weapon != -1 ) {
+                if ( m_bHasAttribute[weapon] ) {
+                    if ( baseAttribute[weapon] ) {
+                        if ( slot == -1 || slot == i ) return attribute[weapon];
+        }}}}
+    }
+    if ( active ) {
+        if ( !IsPlayerAlive( client ) ) return 0;
+
+        new weapon = TF2_GetClientActiveWeapon( client );
+        if ( weapon != -1 ) {
+            if ( m_bHasAttribute[weapon] ) {
+                if ( baseAttribute[weapon] ) return attribute[weapon];
+        }}
+    }
+    
+    return 0;
 }
