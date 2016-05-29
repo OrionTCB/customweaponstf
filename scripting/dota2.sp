@@ -496,9 +496,13 @@ ATTRIBUTE_OVERPOWER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bOverPower_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
+        new Float:old_as = GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_OldAttackSpeed, true );
+        new hit = GetAttributeValueI( m_iClient, _, m_bOverPower_ATTRIBUTE, m_iOverPower_Hit, true );
+        new Float:dur = GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_Duration, true );
 
-        if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_OldAttackSpeed, true ) );
+        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
+
+        if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
         new Float:m_flAttackSpeed;
         new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
         if ( m_aAttribute != Address_Null ) {
@@ -511,13 +515,13 @@ ATTRIBUTE_OVERPOWER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             {
                 m_hTimers[m_iClient][m_hOverPower_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_Cooldown, true ), m_tOverPower_Cooldown, m_iClient );
                 if ( m_hTimers[m_iClient][m_hOverPower_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hOverPower_TimerDuration] );
-                else m_hTimers[m_iClient][m_hOverPower_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_Duration, true ), m_tOverPower_Duration, m_iClient );
+                else m_hTimers[m_iClient][m_hOverPower_TimerDuration] = CreateTimer( dur, m_tOverPower_Duration, m_iClient );
                 EmitSoundToClient( m_iClient, SOUND_RADIANCE );
 
-                TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_OldAttackSpeed, true ) - GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_AttackSpeed, true ) );
+                TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as - GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_AttackSpeed, true ) );
 
-                m_iIntegers[m_iClient][m_iOverpower_RemainingHit] = GetAttributeValueI( m_iClient, _, m_bOverPower_ATTRIBUTE, m_iOverPower_Hit, true );
-                PrintHintText( m_iClient, "Custom: Fire rate increased ! Lasts for %.2f seconds or %i hits.", GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_Duration, true ), GetAttributeValueI( m_iClient, _, m_bOverPower_ATTRIBUTE, m_iOverPower_Hit, true ) );
+                m_iIntegers[m_iClient][m_iOverpower_RemainingHit] = hit;
+                PrintHintText( m_iClient, "Custom: Fire rate increased ! Lasts for %.2f seconds or %i hits.", dur, hit );
             }
         }
         if ( m_hTimers[m_iClient][m_hOverPower_TimerDuration] != INVALID_HANDLE ) // When active
@@ -539,7 +543,7 @@ ATTRIBUTE_OVERPOWER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( m_iIntegers[m_iClient][m_iOverpower_RemainingHit] <= 0 )
             {
                 ClearTimer( m_hTimers[m_iClient][m_hOverPower_TimerDuration] );
-                TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bOverPower_ATTRIBUTE, m_flOverPower_OldAttackSpeed, true ) );
+                TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
             }
         }
     }
@@ -551,11 +555,13 @@ ATTRIBUTE_FERVOR( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bFervor_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
+        new Float:old_as = GetAttributeValueF( m_iClient, _, m_bFervor_ATTRIBUTE, m_flFervor_OldAttackSpeed, true );
 
-        if ( m_iIntegers[m_iClient][m_iFervor_Stack] <= 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bFervor_ATTRIBUTE, m_flFervor_OldAttackSpeed, true ) );
+        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
+
+        if ( m_iIntegers[m_iClient][m_iFervor_Stack] <= 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
         else {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bFervor_ATTRIBUTE, m_flFervor_OldAttackSpeed, true ) );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
             new Float:m_flAttackSpeed;
             new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
             if ( m_aAttribute != Address_Null ) {
@@ -592,12 +598,14 @@ ATTRIBUTE_ENCHANTTOTEM( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             if ( m_hTimers[m_iClient][m_hEnchantTotem_TimerCooldown] == INVALID_HANDLE )
             {
+                new Float:duration = GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_Duration, true );
+
                 m_hTimers[m_iClient][m_hEnchantTotem_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_Cooldown, true ), m_tEnchantTotem, m_iClient );
                 if ( m_hTimers[m_iClient][m_hEnchantTotem_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hEnchantTotem_TimerDuration] );
-                else m_hTimers[m_iClient][m_hEnchantTotem_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_Duration, true ), m_tEnchantTotem_Duration, m_iClient );
+                else m_hTimers[m_iClient][m_hEnchantTotem_TimerDuration] = CreateTimer( duration, m_tEnchantTotem_Duration, m_iClient );
                 EmitSoundToClient( m_iClient, SOUND_RADIANCE );
 
-                PrintHintText( m_iClient, "Custom: Next attack damage increased by ×%.2f. Lasts for %.2f seconds or until damaging an enemy.", GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_BonusDamage, true ), GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_Duration, true ) );
+                PrintHintText( m_iClient, "Custom: Next attack damage increased by ×%.2f. Lasts for %.2f seconds or until damaging an enemy.", GetAttributeValueF( m_iClient, _, m_bEnchantTotem_ATTRIBUTE, m_flEnchantTotem_BonusDamage, true ), duration );
             }
         }
     }
@@ -613,17 +621,19 @@ ATTRIBUTE_ENRAGE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             if ( m_hTimers[m_iClient][m_hEnrage_TimerCooldown] == INVALID_HANDLE && HasAttribute( m_iClient, _, m_bFurySwipes_ATTRIBUTE ) )
             {
+                new Float:duration = GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true );
+
                 m_hTimers[m_iClient][m_hEnrage_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Cooldown, true ), m_tEnrage_Cooldown, m_iClient );
                 if ( m_hTimers[m_iClient][m_hEnrage_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hEnrage_TimerDuration] );
-                else m_hTimers[m_iClient][m_hEnrage_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true ), m_tEnrage_Duration, m_iClient );
+                else m_hTimers[m_iClient][m_hEnrage_TimerDuration] = CreateTimer( duration, m_tEnrage_Duration, m_iClient );
                 EmitSoundToClient( m_iClient, SOUND_RADIANCE );
                 
-                TF2_AddCondition( m_iClient, TFCond_MegaHeal, GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true ) );                                                           // Fancy effects.
-                TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true ) );                                                     // Fancy effects.
-                TF2_AddCondition( m_iClient, TFCond_Teleporting, GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true ) );                                                        // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_MegaHeal, duration );                                                           // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, duration );                                                     // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_Teleporting, duration );                                                        // Fancy effects.
                 TF2_RemoveBadCondition( m_iClient, true );
 
-                PrintHintText( m_iClient, "Custom: Enrage is now active, Fury Swipes damage increased by %.3f. Lasts for %.2f seconds", GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_FurySwipeMultiplier, true ), GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_Duration, true ) );
+                PrintHintText( m_iClient, "Custom: Enrage is now active, Fury Swipes damage increased by %.3f. Lasts for %.2f seconds", GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_FurySwipeMultiplier, true ), duration );
             }
         }
     }
@@ -681,14 +691,16 @@ ATTRIBUTE_INNERVITALITY( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             if ( m_hTimers[m_iClient][m_hInnerVitality_TimerCooldown] == INVALID_HANDLE )
             {
+                new Float:duration = GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Duration );
+
                 if ( m_hTimers[m_iClient][m_hInnerVitality_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hInnerVitality_TimerDuration] );
-                else m_hTimers[m_iClient][m_hInnerVitality_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Duration ), m_tInnerVitality_Duration, m_iClient );
+                else m_hTimers[m_iClient][m_hInnerVitality_TimerDuration] = CreateTimer( duration, m_tInnerVitality_Duration, m_iClient );
                 m_hTimers[m_iClient][m_hInnerVitality_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Cooldown ), m_tInnerVitality_Cooldown, m_iClient );
 
                 TF2_AddCondition( m_iClient, TFCond_MegaHeal, 1.0 );                                                                                                                                               // Fancy effects.
-                TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Duration ) );                                                     // Fancy effects.
-                TF2_AddCondition( m_iClient, TFCond_Teleporting, GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Duration ) );                                                        // Fancy effects.
-                TF2_AddCondition( m_iClient, TFCond_Healing, GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_Duration ) );                                                        // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, duration );                                                     // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_Teleporting, duration );                                                        // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_Healing, duration );                                                        // Fancy effects.
                 EmitSoundToClient( m_iClient, SOUND_RADIANCE );
             }
         }
@@ -1517,7 +1529,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
         //-//
             if ( m_bFervor_ATTRIBUTE[m_iWeapon] )
             {
-                new m_iWeapon3 = GetEntPropEnt( m_iAttacker, Prop_Send, "m_hActiveWeapon" );
+                new m_iWeapon3 = TF2_GetClientActiveWeapon( m_iAttacker );
                 if ( m_bFervor_ATTRIBUTE[m_iWeapon3] )
                 {
                     if ( !( TF2Attrib_GetByName( m_iWeapon3, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon3, "fire rate bonus", m_flFervor_OldAttackSpeed[m_iWeapon] );
