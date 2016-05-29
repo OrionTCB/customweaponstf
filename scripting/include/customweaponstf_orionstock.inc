@@ -514,6 +514,14 @@ stock Float:GetVectorDistanceMeter(const Float:vec1[3], const Float:vec2[3], boo
 {
     return ( GetVectorDistance( vec1, vec2, squared ) / 50.00 );
 }
+stock Float:GetVectorAnglesTwoPoints( const Float:startPos[3], const Float:endPos[3], Float:angles[3] )
+{
+    static Float:tmpVec[3];
+    tmpVec[0] = endPos[0] - startPos[0];
+    tmpVec[1] = endPos[1] - startPos[1];
+    tmpVec[2] = endPos[2] - startPos[2];
+    GetVectorAngles( tmpVec, angles );
+}
 
 // ====[ SOUND ]=======================================================
 stock EmitSoundFromOrigin(const String:sound[],const Float:orig[3])
