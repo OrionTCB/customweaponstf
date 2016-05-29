@@ -1100,14 +1100,9 @@ ATTRIBUTE_DEMOCHARGE_BLOCK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new mode = GetAttributeValueI( m_iClient, _, m_bDemoCharge_HealthThreshold_ATTRIBUTE, m_iDemoCharge_HealthThreshold_Mode );
         new Float:threshold = GetAttributeValueF( m_iClient, _, m_bDemoCharge_HealthThreshold_ATTRIBUTE, m_flDemoCharge_HealthThreshold_Threshold );
 
-        if ( mode == 1 ) {
-            if ( GetClientHealth( m_iClient ) >= threshold && m_iButtons & IN_ATTACK2 == IN_ATTACK2 ) 
-            {
-                m_iButtons &= ~IN_ATTACK2;
-                return m_iButtons;
-            }
-        } else if ( mode == 2 ) {
-            if ( GetClientHealth( m_iClient ) <= threshold && m_iButtons & IN_ATTACK2 == IN_ATTACK2 ) 
+        if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
+        {
+            if ( mode == 1 && GetClientHealth( m_iClient ) >= threshold || mode == 2 && GetClientHealth( m_iClient ) <= threshold )
             {
                 m_iButtons &= ~IN_ATTACK2;
                 return m_iButtons;
@@ -1124,21 +1119,11 @@ ATTRIBUTE_REMOVESTUN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     {
         new type = GetAttributeValueI( m_iClient, _, m_bCannotBeStunned_ATTRIBUTE, m_iCannotBeStunned_Type );
 
-        if ( type <= 1 ) {
-            if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Dazed )
-                && !( GetEntityMoveType( m_iClient ) & MOVETYPE_NONE )
-                && GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) != TF_STUNFLAGS_GHOSTSCARE )
-                TF2_RemoveCondition( m_iClient, TFCond_Dazed );
-        }
-        else if ( type == 2 ) {
-            if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) == TF_STUNFLAGS_GHOSTSCARE
-                && !( GetEntityMoveType( m_iClient ) & MOVETYPE_NONE ) ) TF2_RemoveCondition( m_iClient, TFCond_Dazed );
-        }
-        else if ( type >= 3 ) {
-            if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Dazed )
-                && !( GetEntityMoveType( m_iClient ) & MOVETYPE_NONE )
-                || GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) == TF_STUNFLAGS_GHOSTSCARE
-                && !( GetEntityMoveType( m_iClient ) & MOVETYPE_NONE ) )
+        if ( !( GetEntityMoveType( m_iClient ) & MOVETYPE_NONE ) )
+        {
+            if ( type == 1 && TF2_IsPlayerInCondition( m_iClient, TFCond_Dazed ) && GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) != TF_STUNFLAGS_GHOSTSCARE 
+                || type == 2 && GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) == TF_STUNFLAGS_GHOSTSCARE
+                || type == 3 && TF2_IsPlayerInCondition( m_iClient, TFCond_Dazed ) || type == 3 && GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) == TF_STUNFLAGS_GHOSTSCARE )
                 TF2_RemoveCondition( m_iClient, TFCond_Dazed );
         }
     }
@@ -1210,7 +1195,8 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 ATTRIBUTE_SETWEAPONSWITCH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE ) ) TF2_SetClientSlot( m_iClient, GetAttributeValueI( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE, m_iSetWeaponSwith_Slot ) );
+    if ( HasAttribute( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE ) )
+        TF2_SetClientSlot( m_iClient, GetAttributeValueI( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE, m_iSetWeaponSwith_Slot ) );
 
     return m_iButtons;
 }
@@ -1307,7 +1293,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new Float:m_flResPct = resphp * m_flMHP;
         if ( m_flMHP * 100.0 > max ) m_flResPct = resphp * FloatDiv( max+0.0, 100.0 );
 
-        Format( m_strHUDDamageResHpMissing, sizeof( m_strHUDDamageResHpMissing ), "Resistance +%.0f%%", m_flResPct*100.0 );
+        Format( m_strHUDDamageResHpMissing, sizeof( m_strHUDDamageResHpMissing ), "Resistance %.0f%%", m_flResPct*100.0 );
     }
 //-//
     if ( m_iIntegers[m_iClient][m_iStealDamageVictim] > 1 || m_iIntegers[m_iClient][m_iStealDamageAttacker] > 1 )
@@ -3855,14 +3841,11 @@ public Action:m_tMCFRTD_Timer( Handle:timer, Handle:m_hData03 )
             new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
-            for ( new m_iSlot = 0; m_iSlot <= 2; m_iSlot++ )
-            {
-                TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", m_flAttackSpeed + GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_AttackSpeed ) );
-                m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
+            TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", m_flAttackSpeed + GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_AttackSpeed ) );
+            m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
-                if ( m_flAttackSpeed <= 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-            }
-
+            if ( m_flAttackSpeed <= 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
+            
             m_iIntegers[m_iClient][m_iMissStack]++;
         }
     }
