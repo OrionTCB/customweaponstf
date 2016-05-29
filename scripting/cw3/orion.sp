@@ -13,7 +13,7 @@
 #include <time>
 
 // ====[ CONSTANTS ]===================================================
-#define PLUGIN_VERSION                "1.03"
+#define PLUGIN_VERSION                "1.04"
 
 // ====[ PLUGIN ]======================================================
 public Plugin:myinfo =
