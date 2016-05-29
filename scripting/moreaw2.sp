@@ -544,7 +544,7 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
+        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
         static bool:snd1[MAXPLAYERS + 1] = false;
         static bool:snd2[MAXPLAYERS + 1] = false;
@@ -728,9 +728,9 @@ ATTRIBUTE_DAMAGEDONE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 ATTRIBUTE_FLYWHILESHOOTING( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bFlyWhileShooting_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK == IN_ATTACK ) {
-
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
+    if ( HasAttribute( m_iClient, _, m_bFlyWhileShooting_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK == IN_ATTACK )
+    {
+        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
         if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
         if ( GetEntityFlags( m_iClient ) & FL_ONGROUND ) return m_iButtons;
@@ -863,8 +863,7 @@ ATTRIBUTE_DISABLEALT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDisableAlt_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
-        SetEntPropFloat( m_iWeapon, Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+10.0 );
+        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+10.0 );
     }
 
     return m_iButtons;
@@ -874,8 +873,7 @@ ATTRIBUTE_DISABLEPRIMARY( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDisablePrimAlt_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
-        SetEntPropFloat( m_iWeapon, Prop_Send, "m_flNextPrimaryAttack", GetGameTime()+10.0 );
+        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextPrimaryAttack", GetGameTime()+10.0 );
     }
 
     return m_iButtons;
@@ -1093,7 +1091,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
         if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
         {
-            new m_iWeapon = GetEntPropEnt( m_iClient, Prop_Send, "m_hActiveWeapon" );
+            new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
             if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
             if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true ) );
