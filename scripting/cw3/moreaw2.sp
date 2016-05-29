@@ -728,8 +728,8 @@ ATTRIBUTE_DAMAGEDONE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 ATTRIBUTE_FLYWHILESHOOTING( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bFlyWhileShooting_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK == IN_ATTACK ) {
-
+    if ( HasAttribute( m_iClient, _, m_bFlyWhileShooting_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK == IN_ATTACK )
+    {
         new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
         if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
