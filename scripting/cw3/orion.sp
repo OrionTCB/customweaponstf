@@ -39,6 +39,7 @@ enum
     Handle:m_hPsycho_TimerDuration,
     Handle:m_hStealDamageA_TimerDuration,
     Handle:m_hStealDamageV_TimerDuration,
+    Handle:m_hStunlock_TimerDelay,
     Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
@@ -95,6 +96,7 @@ new m_iHotSauceOnHit_Type[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bStunOnHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flStunOnHit_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iStunOnHit_StunLock[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bDrainUbercharge_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDrainUbercharge_Percentage[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -142,6 +144,7 @@ new m_iHotSauceOnCrit_Type[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bStunOnCrit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flStunOnCrit_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iStunOnCrit_StunLock[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bDrainUberchargeOnCrit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDrainUberchargeOnCrit_Percentage[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -250,6 +253,7 @@ new Float:m_flBackstabDamageModSubStun_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flBackstabDamageModSubStun_Multiplier[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iBackstabDamageModSubStun_BlockSuicide[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iBackstabDamageModSubStun_Security[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iBackstabDamageModSubStun_StunLock[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bCombo_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flCombo_BonusDamage[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -1353,7 +1357,11 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "stun on hit" ) )
     {
-        m_flStunOnHit_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValue );
+        new String:m_sValues[2][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_flStunOnHit_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValues[0] );
+        m_iStunOnHit_StunLock[m_iClient][m_iSlot]  = StringToInt( m_sValues[1] );
         m_bStunOnHit_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
@@ -1362,7 +1370,11 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "stun on hitcrit" ) )
     {
-        m_flStunOnCrit_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValue );
+        new String:m_sValues[2][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_flStunOnCrit_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValues[0] );
+        m_iStunOnCrit_StunLock[m_iClient][m_iSlot]  = StringToInt( m_sValues[1] );
         m_bStunOnCrit_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
@@ -1552,13 +1564,14 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "backstab damage modifier sub stun" ) )
     {
-        new String:m_sValues[4][10];
+        new String:m_sValues[5][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flBackstabDamageModSubStun_Multiplier[m_iClient][m_iSlot]  = StringToFloat( m_sValues[0] );
         m_flBackstabDamageModSubStun_Duration[m_iClient][m_iSlot]    = StringToFloat( m_sValues[1] );
         m_iBackstabDamageModSubStun_Security[m_iClient][m_iSlot]     = StringToInt( m_sValues[2] );
         m_iBackstabDamageModSubStun_BlockSuicide[m_iClient][m_iSlot] = StringToInt( m_sValues[3] );
+        m_iBackstabDamageModSubStun_StunLock[m_iClient][m_iSlot]     = StringToInt( m_sValues[4] );
         m_bBackstabDamageModSubStun_ATTRIBUTE[m_iClient][m_iSlot]    = true;
         m_aAction = Plugin_Handled;
     }
@@ -2279,6 +2292,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bStunOnHit_ATTRIBUTE[m_iClient][m_iSlot]                   = false;
             m_flStunOnHit_Duration[m_iClient][m_iSlot]                   = 0.0;
+            m_iStunOnHit_StunLock[m_iClient][m_iSlot]                    = 0;
 
             m_bDrainUbercharge_ATTRIBUTE[m_iClient][m_iSlot]             = false;
             m_flDrainUbercharge_Percentage[m_iClient][m_iSlot]           = 0.0;
@@ -2322,6 +2336,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bStunOnCrit_ATTRIBUTE[m_iClient][m_iSlot]                  = false;
             m_flStunOnCrit_Duration[m_iClient][m_iSlot]                  = 0.0;
+            m_iStunOnCrit_StunLock[m_iClient][m_iSlot]                   = 0;
 
             m_bDrainUberchargeOnCrit_ATTRIBUTE[m_iClient][m_iSlot]       = false;
             m_flDrainUberchargeOnCrit_Percentage[m_iClient][m_iSlot]     = 0.0;
@@ -2430,6 +2445,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flBackstabDamageModSubStun_Duration[m_iClient][m_iSlot]                    = 0.0;
             m_iBackstabDamageModSubStun_Security[m_iClient][m_iSlot]                     = 0;
             m_iBackstabDamageModSubStun_BlockSuicide[m_iClient][m_iSlot]                 = 0;
+            m_iBackstabDamageModSubStun_StunLock[m_iClient][m_iSlot]                     = 0;
 
             m_bCombo_ATTRIBUTE[m_iClient][m_iSlot]                                       = false;
             m_flCombo_BonusDamage[m_iClient][m_iSlot]                                    = 0.0;
@@ -2655,7 +2671,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     m_flDamage = 0.0;
             }
         //-//
-            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && ( GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) ) >= 1.0 )
+            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 < ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ? GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 : ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ) >= 1 )
                 m_flDamage = 0.0;
         //-//
             if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) && m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) )
@@ -2825,20 +2841,24 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 
                                     if ( duration != 0.0 )
                                     {
-                                        if ( m_iBackstabDamageModSubStun_BlockSuicide[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bBackstab_SuicideBlocker] = true;
-             
-                                        new Float:m_flDuration;
-                                        if ( m_iIntegers[m_iVictim][m_iOPBackstab] != 0 ) m_flDuration = duration / ( 2*m_iIntegers[m_iVictim][m_iOPBackstab] );
-                                        else m_flDuration = duration;
+                                        if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                                        {
+                                            if ( m_iBackstabDamageModSubStun_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
+                                            if ( m_iBackstabDamageModSubStun_BlockSuicide[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bBackstab_SuicideBlocker] = true;
+                 
+                                            new Float:m_flDuration;
+                                            if ( m_iIntegers[m_iVictim][m_iOPBackstab] != 0 ) m_flDuration = duration / ( 2*m_iIntegers[m_iVictim][m_iOPBackstab] );
+                                            else m_flDuration = duration;
 
-                                        if ( m_iBackstabDamageModSubStun_Security[m_iAttacker][m_iSlot] == 1 ) {
+                                            if ( m_iBackstabDamageModSubStun_Security[m_iAttacker][m_iSlot] == 1 ) {
 
-                                            if ( m_flDuration >= 10.0 ) m_iIntegers[m_iVictim][m_iOPBackstab]++;
+                                                if ( m_flDuration >= 10.0 ) m_iIntegers[m_iVictim][m_iOPBackstab]++;
+                                            }
+                                            TF2_StunPlayer( m_iVictim, m_flDuration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
+
+                                            EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.375 );
+                                            EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
                                         }
-                                        TF2_StunPlayer( m_iVictim, m_flDuration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
-
-                                        EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.375 );
-                                        EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
                                     }
                                 }
                             }
@@ -3048,11 +3068,11 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 && m_bHasAttribute[m_iAttacker][m_iSlot] )
             {
                 if ( m_bHotSauceOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != 0 )
-                    {
-                        new type = m_iHotSauceOnHit_Type[m_iAttacker][m_iSlot];
+                {   
+                    new type = m_iHotSauceOnHit_Type[m_iAttacker][m_iSlot];
 
+                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
+                    {
                         new Handle:m_hData01 = CreateDataPack();
                         CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
                         WritePackFloat( m_hData01, m_flHotSauceOnHit_Duration[m_iAttacker][m_iSlot] );
@@ -3065,9 +3085,15 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
             //-//
                 if ( m_bStunOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                 {
-                    TF2_StunPlayer( m_iVictim, m_flStunOnHit_Duration[m_iAttacker][m_iSlot], 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
-                    EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.4 );
-                    EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
+                    if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                    {
+                        new Float:duration = m_flStunOnHit_Duration[m_iAttacker][m_iSlot];
+                        if ( m_iStunOnHit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
+                        
+                        TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
+                        EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.4 );
+                        EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
+                    }
                 }
             //-//
                 if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro && m_flDamage >= 1.0 )
@@ -3310,16 +3336,23 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
             {
                 if ( m_bStunOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                 {
-                    TF2_StunPlayer( m_iVictim, m_flStunOnCrit_Duration[m_iAttacker][m_iSlot], 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
-                    EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.25 );
-                    EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
+                    if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                    {
+                        new Float:duration = m_flStunOnCrit_Duration[m_iAttacker][m_iSlot];
+                        if ( m_iStunOnCrit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
+                        
+                        TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
+                        EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.25 );
+                        EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
+                    }
                 }
             //-//
                 if ( m_bHotSauceOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                 {
-                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != 0 )
+                    new type = m_iHotSauceOnCrit_Type[m_iAttacker][m_iSlot];
+
+                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
                     {
-                        new type = m_iHotSauceOnCrit_Type[m_iAttacker][m_iSlot];
 
                         new Handle:m_hData01 = CreateDataPack();
                         CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
@@ -3891,6 +3924,7 @@ public Action:m_tStealDamageVictim( Handle:timer, any:m_iVictim )
     m_iIntegers[m_iVictim][m_iStealDamageVictim] = 0;
     m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = INVALID_HANDLE;
 }
+public Action:m_tStunLock( Handle:timer, any:m_iVictim ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = INVALID_HANDLE;
 // Super Timer
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
 
