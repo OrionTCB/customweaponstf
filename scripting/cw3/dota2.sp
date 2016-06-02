@@ -72,8 +72,9 @@ enum
 {
     m_iFervor_Stack = 0,
     m_iFurySwipe_Stack,
-    m_iNecromastery_Souls,
     m_iOverpower_RemainingHit,
+    m_iNecromastery_Souls,
+    m_iBloodstone_Charge,
     /*m_iPRD_Stack,*/
     m_iInteger
 };
@@ -246,6 +247,14 @@ new Float:m_flInnerVitality_HealthThreshold[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bLastWill_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iLastWill_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
+
+new bool:m_bBloodstone_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iBloodstone_BaseCharge[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flBloodstone_RegenPerCharge[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flBloodstone_BaseHeal[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flBloodstone_HealPerCharge[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flBloodstone_HealRadius[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flBloodstone_ChargeRadius[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 
 // ====[ ON PLUGIN START ]=============================================
@@ -482,6 +491,7 @@ public OnPreThink( m_iClient )
         m_iButtons = ATTRIBUTE_DUEL( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_RADIANCE( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_RADIANCEMISS( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
+        m_iButtons = ATTRIBUTE_BLOODSTONE( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
 
         m_iButtons = HUD_SHOWSYNCHUDTEXT( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
 
@@ -667,8 +677,8 @@ ATTRIBUTE_RADIANCEMISS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 new Float:m_flPos2[3];
                 GetClientAbsOrigin( i, m_flPos2 );
                                     
-                new Float:m_flDistance = GetVectorDistance( m_flPos1, m_flPos2 );
-                if ( m_flDistance < GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
+                new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                if ( distance <= GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
                 {
                     // Create a timer that lingers 0.5 to repeatedly remove the miss debuff.
                     if ( m_hTimers[i][m_hRadiance_MissLinger] == INVALID_HANDLE ) CreateTimer( 0.5, m_tRadiance_SubAbility_MissLinger, i );
@@ -775,6 +785,18 @@ ATTRIBUTE_DUEL( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     return m_iButtons;
 }
 
+ATTRIBUTE_BLOODSTONE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
+{
+    if ( HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) )
+    {
+        if ( m_iIntegers[m_iClient][m_iBloodstone_Charge] <= 0 ) m_iIntegers[m_iClient][m_iBloodstone_Charge] = GetAttributeValueI( m_iClient, _, m_bBloodstone_ATTRIBUTE, m_iBloodstone_BaseCharge );
+
+        TF2Attrib_SetByName( m_iClient, "health regen", 0.0+m_iIntegers[m_iClient][m_iBloodstone_Charge] * GetAttributeValueF( m_iClient, _, m_bBloodstone_ATTRIBUTE, m_flBloodstone_RegenPerCharge ) );
+    }
+
+    return m_iButtons;
+}
+
 PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( !HasAttribute( m_iClient, _, m_bNecromastery_ATTRIBUTE ) ) {
@@ -782,6 +804,9 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     }
     if ( !HasAttribute( m_iClient, _, m_bEvasionAW2_ATTRIBUTE ) ) {
         if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_flFloats[m_iClient][m_flEvasionChance_AW2] = 0.0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) TF2Attrib_RemoveByName( m_iClient, "health regen" ); 
     }
 
     return m_iButtons;
@@ -793,6 +818,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     new String:m_strHUDEvasionOnHit[42];
     new String:m_strHUDOverPower[42];
     new String:m_strHUDDuel[42];
+    new String:m_strHUDBloodstone[42];
 
     if ( HasAttribute( m_iClient, _, m_bNecromastery_ATTRIBUTE, true ) ) {
         if ( GetAttributeValueI( m_iClient, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_MaximumStack, true ) >= 1024 ) {
@@ -822,13 +848,19 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel %.0f", m_flFloats[m_iClient][m_flDuel_Bonus] );
     }
 //-//
+    if ( HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) )
+    {
+        Format( m_strHUDBloodstone, sizeof( m_strHUDBloodstone ), "Bloodpact %i", m_iIntegers[m_iClient][m_iBloodstone_Charge] );
+    }
+//-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
     {
-        ShowSyncHudText( m_iClient, g_hHudText_D2, "%s \n%s \n%s \n%s \n%s", m_strHUDEvasionOnHit,
-                                                                             m_strHUDNecromastery,
-                                                                             m_strHUDFervor,
-                                                                             m_strHUDOverPower,
-                                                                             m_strHUDDuel );
+        ShowSyncHudText( m_iClient, g_hHudText_D2, "%s \n%s \n%s \n%s \n%s \n%s", m_strHUDEvasionOnHit,
+                                                                                  m_strHUDNecromastery,
+                                                                                  m_strHUDFervor,
+                                                                                  m_strHUDOverPower,
+                                                                                  m_strHUDDuel,
+                                                                                  m_strHUDBloodstone );
     }
     
     return m_iButtons;
@@ -1197,6 +1229,24 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bDuel_ATTRIBUTE[m_iClient][m_iSlot]    = true;
         m_aAction = Plugin_Handled;
     }
+    /* Bloodstone
+     *
+     * ---------------------------------------------------------------------- */
+    else if ( StrEqual( m_sAttribute, "bloodstone" ) )
+    {
+        new String:m_sValues[6][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_iBloodstone_BaseCharge[m_iClient][m_iSlot]        = StringToInt( m_sValues[0] );
+        m_flBloodstone_RegenPerCharge[m_iClient][m_iSlot]   = StringToFloat( m_sValues[1] );
+        m_flBloodstone_BaseHeal[m_iClient][m_iSlot]         = StringToFloat( m_sValues[2] );
+        m_flBloodstone_HealPerCharge[m_iClient][m_iSlot]    = StringToFloat( m_sValues[3] );
+        m_flBloodstone_HealRadius[m_iClient][m_iSlot]       = StringToFloat( m_sValues[4] );
+        m_flBloodstone_ChargeRadius[m_iClient][m_iSlot]     = StringToFloat( m_sValues[5] );
+        m_bBloodstone_ATTRIBUTE[m_iClient][m_iSlot]         = true;
+        m_aAction = Plugin_Handled;
+    }
+
     
     // Meh.
     if ( !m_bHasAttribute[m_iClient][m_iSlot] ) m_bHasAttribute[m_iClient][m_iSlot] = bool:m_aAction;
@@ -1372,6 +1422,14 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bLastWill_ATTRIBUTE[m_iClient][m_iSlot]    = false;
             m_iLastWill_Damage[m_iClient][m_iSlot]       = 0;
+
+            m_bBloodstone_ATTRIBUTE[m_iClient][m_iSlot]         = false;
+            m_iBloodstone_BaseCharge[m_iClient][m_iSlot]        = 0;
+            m_flBloodstone_RegenPerCharge[m_iClient][m_iSlot]   = 0.0;
+            m_flBloodstone_BaseHeal[m_iClient][m_iSlot]         = 0.0;
+            m_flBloodstone_HealPerCharge[m_iClient][m_iSlot]    = 0.0;
+            m_flBloodstone_HealRadius[m_iClient][m_iSlot]       = 0.0;
+            m_flBloodstone_ChargeRadius[m_iClient][m_iSlot]     = 0.0;
         }
     }
 }
@@ -1817,8 +1875,8 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
                     new Float:m_flPos2[3];
                     GetClientAbsOrigin( i, m_flPos2 );
                    
-                    new Float:m_flDistance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( m_flDistance < GetAttributeValueF( m_iClient, _, m_bStaticField_ATTRIBUTE, m_flStaticField_Radius ) )
+                    new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                    if ( distance <= GetAttributeValueF( m_iClient, _, m_bStaticField_ATTRIBUTE, m_flStaticField_Radius ) )
                     {
                         new m_iDamage = RoundToFloor( GetAttributeValueF( m_iClient, _, m_bStaticField_ATTRIBUTE, m_flStaticField_DamagePct ) * GetClientHealth( i ) );
                         DealDamage( i, ( m_iDamage > 0 ? m_iDamage : 1 ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_OTHER );
@@ -1864,18 +1922,49 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                 }
             }
         //-//
+            if ( HasAttribute( m_iVictim, _, m_bBloodstone_ATTRIBUTE ) )
+            {
+                for ( new i = 1; i <= MaxClients; i++ ) // Checks every client.
+                {
+                    if ( IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) == GetClientTeam( m_iVictim ) )
+                    {
+                        new Float:m_flPos1[3];
+                        GetClientAbsOrigin( m_iVictim, m_flPos1 );
+                        new Float:m_flPos2[3];
+                        GetClientAbsOrigin( i, m_flPos2 );
+
+                        new Float:m_flHealed = GetAttributeValueF( m_iVictim, _, m_bBloodstone_ATTRIBUTE, m_flBloodstone_BaseHeal ) + ( 0.0+m_iIntegers[m_iVictim][m_iBloodstone_Charge] * GetAttributeValueF( m_iVictim, _, m_bBloodstone_ATTRIBUTE, m_flBloodstone_HealPerCharge ) );
+
+                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                        if ( distance <= GetAttributeValueF( m_iVictim, _, m_bBloodstone_ATTRIBUTE, m_flBloodstone_HealRadius ) )
+                            TF2_HealPlayer( i, m_flHealed, 0.66666666666666667, true );
+                    }
+                }
+                m_iIntegers[m_iVictim][m_iBloodstone_Charge] = RoundToCeil( m_iIntegers[m_iVictim][m_iBloodstone_Charge] / 2.0 );
+            }
+        //-//
             for ( new i = 1; i <= MaxClients; i++ ) // Checks every client.
             {
-                if ( IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iVictim ) && HasAttribute( i, _, m_bBloodbath_ATTRIBUTE ) )
+                if ( IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iVictim ) && i != m_iKiller )
                 {
                     new Float:m_flPos1[3];
                     GetClientAbsOrigin( m_iVictim, m_flPos1 );
                     new Float:m_flPos2[3];
                     GetClientAbsOrigin( i, m_flPos2 );
-                    new Float:m_flHealed = 0.0+TF2_GetClientMaxHealth( m_iVictim ) * GetAttributeValueF( i, _, m_bBloodbath_ATTRIBUTE, m_flBloodbath_Heal );
-                                        
-                    new Float:m_flDistance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( m_flDistance < GetAttributeValueF( i, _, m_bBloodbath_ATTRIBUTE, m_flBloodbath_Radius ) && i != m_iKiller ) TF2_HealPlayer( i, m_flHealed, 0.66666666666666667, true );
+                    new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+
+                    if ( HasAttribute( i, _, m_bBloodbath_ATTRIBUTE ) )
+                    {
+                        new Float:m_flHealed = 0.0+TF2_GetClientMaxHealth( m_iVictim ) * GetAttributeValueF( i, _, m_bBloodbath_ATTRIBUTE, m_flBloodbath_Heal );
+                                            
+                        if ( distance <= GetAttributeValueF( i, _, m_bBloodbath_ATTRIBUTE, m_flBloodbath_Radius )  )
+                            TF2_HealPlayer( i, m_flHealed, 0.66666666666666667, true );
+                    }
+                    if ( HasAttribute( i, _, m_bBloodstone_ATTRIBUTE ) )
+                    {
+                        if ( distance <= GetAttributeValueF( i, _, m_bBloodstone_ATTRIBUTE, m_flBloodstone_ChargeRadius ) )
+                            m_iIntegers[i][m_iBloodstone_Charge]++;
+                    }
                 }
             }
         //-//
@@ -1891,7 +1980,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
             {
                 m_flFloats[m_iVictim][i] = 0.0;             //DON'T remove duel bonus.
             }
-            for ( new i = 0; i < m_iInteger-1; i++ )
+            for ( new i = 0; i < m_iInteger-2; i++ )
             {
                 m_iIntegers[m_iVictim][i] = 0;
             }
@@ -1932,6 +2021,9 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                         // And, m_iKiller IS THE KILLER.
                     }
                 }
+            //-//
+                if ( HasAttribute( m_iKiller, _, m_bBloodstone_ATTRIBUTE ) )
+                    m_iIntegers[m_iKiller][m_iBloodstone_Charge]++;
             }
         }
     }
@@ -1988,8 +2080,8 @@ public Action:m_tRadiance( Handle:timer, any:m_iClient )
                         GetClientEyePosition( i, m_flPos2 );
                         m_flPos2[2] -= 30.0;
                         
-                        new Float:m_flDistance = GetVectorDistance( m_flPos1, m_flPos2 );
-                        if ( m_flDistance < GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
+                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                        if ( distance <= GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
                         {
                             decl Handle:m_hSee;
                             ( m_hSee = INVALID_HANDLE );
