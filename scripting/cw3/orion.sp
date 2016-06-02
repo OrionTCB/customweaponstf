@@ -1089,7 +1089,7 @@ ATTRIBUTE_SPYDETECTOR( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 GetClientAbsOrigin( i, m_flPos2 );
 
                 new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                if ( distance < radius )
+                if ( distance <= radius )
                 {
                     if ( type == 1 ) TF2_RemoveCondition( i, TFCond_Cloaked );
                     if ( type == 2 ) TF2_RemoveCondition( i, TFCond_Disguised );
@@ -1176,7 +1176,7 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                     GetClientAbsOrigin( i, m_flPos2 );
 
                     new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( distance < ( 450.0 * bonus_radius ) )
+                    if ( distance <= ( 450.0 * bonus_radius ) )
                     {
                         if ( mode == 1 )
                         {
@@ -3133,7 +3133,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     GetClientAbsOrigin( m_iVictim, m_flPos2 );
 
                     new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( distance < m_flAfterburnCLOSERANGE_Range[m_iAttacker][m_iSlot] )
+                    if ( distance <= m_flAfterburnCLOSERANGE_Range[m_iAttacker][m_iSlot] )
                     {
                         if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) ) {
                             TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
@@ -3155,7 +3155,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     GetClientAbsOrigin( m_iVictim, m_flPos2 );
 
                     new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( distance < m_flBleedCLOSERANGE_Range[m_iAttacker][m_iSlot] )
+                    if ( distance <= m_flBleedCLOSERANGE_Range[m_iAttacker][m_iSlot] )
                     {
                         TF2_RemoveCondition( m_iVictim, TFCond_Bleeding );
                         TF2_MakeBleed( m_iVictim, m_iAttacker, m_flBleedCLOSERANGE_Duration[m_iAttacker][m_iSlot] );
@@ -3527,7 +3527,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         {
             new m_iWeapon = g_iLastWeapon[m_iKiller];
             new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon, m_iInflictor );
-            if ( m_iWeapon != -1 && m_bHasAttribute[m_iKiller][m_iSlot] )
+            if ( m_bHasAttribute[m_iKiller][m_iSlot] )
             {
                 if ( m_bKillGib_ATTRIBUTE[m_iKiller][m_iSlot] )
                 {
@@ -3614,14 +3614,14 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                                 GetClientAbsOrigin( i, m_flPos2 );
 
                                 new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                                if ( distance <= distance )
+                                if ( distance <= radius )
                                 {
                                     if ( m_hTimers[i][m_hStunlock_TimerDelay] == INVALID_HANDLE )
                                     {
                                         if ( m_iScareOnKill_StunLock[m_iKiller][m_iSlot] == 1 ) m_hTimers[i][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, i );
                                             
                                         new Float:stun_reduction = 1.0;
-                                        if ( distance > 73.0 )
+                                        if ( distance >= 73.0 )
                                             stun_reduction = ( duration * ( radius - ( ( distance - 73.0 ) * 0.66 ) ) / radius ) / duration;
 
                                         TF2_StunPlayer( i, duration * stun_reduction, 1.0, TF_STUNFLAGS_GHOSTSCARE, m_iKiller );
@@ -3833,7 +3833,8 @@ public Action:m_tLowBerserker_TimerDuration( Handle:timer, any:m_iClient )
 public Action:m_tPsycho_TimerDuration( Handle:timer, any:m_iClient )
 {
     m_hTimers[m_iClient][m_hPsycho_TimerDuration] = INVALID_HANDLE;
-    m_flFloats[m_iClient][m_flPsychoRegenCharge] = 0.0;//You never know.™
+    m_flFloats[m_iClient][m_flPsychoRegenCharge] = 0.0;
+    m_flFloats[m_iClient][m_flPyschoCharge] = 0.0;
 }
 public Action:m_tDamageReceivedUnleashedDeath_TimerDelay( Handle:timer, any:m_iVictim )
 {
@@ -3856,7 +3857,7 @@ public Action:m_tDamageReceivedUnleashedDeath_TimerDelay( Handle:timer, any:m_iV
 
                     new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
                     new Float:final_radius = radius + ( m_flFloats[m_iVictim][m_flDamageReceived] * 0.2 );
-                    if ( distance < final_radius )
+                    if ( distance <= final_radius )
                     {
                         decl Handle:m_hSee;
                         ( m_hSee = INVALID_HANDLE );
@@ -3869,7 +3870,7 @@ public Action:m_tDamageReceivedUnleashedDeath_TimerDelay( Handle:timer, any:m_iV
                                 // Limit the minimum damage to 50%
                                 // Begin the reduction at 73.0 HU.
                                 new Float:dmg_reduction = 1.0;
-                                if ( distance > 73.0 )
+                                if ( distance >= 73.0 )
                                     dmg_reduction = ( m_flFloats[m_iVictim][m_flDamageReceived] * ( final_radius - ( ( distance - 73.0 ) * 0.66 ) ) / final_radius ) / m_flFloats[m_iVictim][m_flDamageReceived];
 
                                 DealDamage( i, RoundToFloor( m_flFloats[m_iVictim][m_flDamageReceived] * dmg_reduction ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL, "pumpkindeath" );
