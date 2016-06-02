@@ -46,7 +46,6 @@ enum
     Handle:m_hOverPower_TimerDuration,
     Handle:m_hRadiance_MissLinger,
     Handle:m_hRadiance_TimerInterval,
-    Handle:m_hStunlock_TimerDelay,
     Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
