@@ -184,6 +184,7 @@ new bool:m_bDisorientateOnHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bNoBackstab_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flNoBackstab_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iNoBackstab_Crit[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bElectroshock_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flElectroshock_Charge[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -194,7 +195,8 @@ new Float:m_flElectroshock_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
      * ---------------------------------------------------------------------- */
 
 new bool:m_bSpeedCloak_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flSpeedCloak_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flSpeedCloak_Multiplier[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flSpeedCloak_OldSpeed[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bDemoCharge_Ubercharge_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 
@@ -932,17 +934,10 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) )
     {
-        new Float:m_flSpeed = GetEntPropFloat( m_iClient, Prop_Send, "m_flMaxspeed" );
-        if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) )
-        {
-            if ( m_flSpeed > 5.0 )
-            {
-                new Float:m_flNewSpeed = GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Amount );
-                SetEntPropFloat( m_iClient, Prop_Send, "m_flMaxspeed", m_flNewSpeed );
-            }
-        } else {
-            if ( m_flSpeed > 5.0 ) SetEntPropFloat( m_iClient, Prop_Send, "m_flMaxspeed", 300.0 );
-        }
+        if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) )
+            TF2Attrib_SetByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
+        else
+            TF2Attrib_SetByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
     }
 
     return m_iButtons;
@@ -1183,7 +1178,11 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "speed while cloaked" ) )
     {
-        m_flSpeedCloak_Amount[m_iClient][m_iSlot]            = StringToFloat( m_sValue );
+        new String:m_sValues[2][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_flSpeedCloak_Multiplier[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
+        m_flSpeedCloak_OldSpeed[m_iClient][m_iSlot]          = StringToFloat( m_sValues[1] );
         m_bSpeedCloak_ATTRIBUTE[m_iClient][m_iSlot]          = true;
         m_aAction = Plugin_Handled;
     }
@@ -1481,8 +1480,12 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "no backstab" ) )
     {
-        m_flNoBackstab_Damage[m_iClient][m_iSlot]   = StringToFloat( m_sValue );
-        m_bNoBackstab_ATTRIBUTE[m_iClient][m_iSlot]  = true;
+        new String:m_sValues[2][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_flNoBackstab_Damage[m_iClient][m_iSlot]   = StringToFloat( m_sValues[0] );
+        m_iNoBackstab_Crit[m_iClient][m_iSlot]      = StringToInt( m_sValues[1] );
+        m_bNoBackstab_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
     /* Charged Airblast SOUNDONLY
@@ -1722,6 +1725,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bNoBackstab_ATTRIBUTE[m_iClient][m_iSlot]                                  = false;
             m_flNoBackstab_Damage[m_iClient][m_iSlot]                                    = 0.0;
+            m_iNoBackstab_Crit[m_iClient][m_iSlot]                                       = 0;
 
             m_bElectroshock_ATTRIBUTE[m_iClient][m_iSlot]                                = false;
             m_flElectroshock_Charge[m_iClient][m_iSlot]                                  = 0.0;
@@ -1732,7 +1736,8 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
              * ---------------------------------------------------------------------- */
 
             m_bSpeedCloak_ATTRIBUTE[m_iClient][m_iSlot]                      = false;
-            m_flSpeedCloak_Amount[m_iClient][m_iSlot]                        = 0.0;
+            m_flSpeedCloak_Multiplier[m_iClient][m_iSlot]                    = 0.0;
+            m_flSpeedCloak_OldSpeed[m_iClient][m_iSlot]                      = 0.0;
 
             m_bDemoCharge_Ubercharge_ATTRIBUTE[m_iClient][m_iSlot]           = false;
 
@@ -1903,19 +1908,22 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                                 }
                             }
 
-                            NormalizeVector( m_flForce, m_flForce );
-                            if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
-                            
-                            new Float:fScale = m_flDamage * m_flExplosiveDamage_Force[m_iAttacker][m_iSlot];
-                            if ( fScale < 100.0 ) fScale = 100.0;
-                            if ( fScale > 600.0 ) fScale = 600.0;
-                            ScaleVector( m_flForce, fScale );
-                            if ( m_flForce[2] < 320.0 && m_flDamage >= 10.0 ) m_flForce[2] = 320.0;
-                            
-                            decl Float:vClientVelocity[3];
-                            GetVelocity( m_iVictim, vClientVelocity );
-                            AddVectors( vClientVelocity, m_flForce, vClientVelocity );
-                            TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                            if ( m_flExplosiveDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
+                            {
+                                NormalizeVector( m_flForce, m_flForce );
+                                if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
+                                
+                                new Float:fScale = m_flDamage * m_flExplosiveDamage_Force[m_iAttacker][m_iSlot];
+                                if ( fScale < 100.0 ) fScale = 100.0;
+                                if ( fScale > 600.0 ) fScale = 600.0;
+                                ScaleVector( m_flForce, fScale );
+                                if ( m_flForce[2] < 320.0 && m_flDamage >= 10.0 ) m_flForce[2] = 320.0;
+                                
+                                decl Float:vClientVelocity[3];
+                                GetVelocity( m_iVictim, vClientVelocity );
+                                AddVectors( vClientVelocity, m_flForce, vClientVelocity );
+                                TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                            }
 
                             new Float:flPos1[3];
                             GetClientEyePosition( m_iVictim, flPos1 );
@@ -1946,7 +1954,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                                                     // Begin the reduction at 73.0 HU.
                                                     new Float:dmg_reduction = 1.0;
                                                     if ( distance > 73.0 )
-                                                        dmg_reduction = ( m_flDamage * ( m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.5 ) ) / m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
+                                                        dmg_reduction = ( m_flDamage * ( m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
 
                                                     DealDamage( i, RoundToFloor( ( ( m_iExplosiveDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, ( m_iType & TF_DMG_CRIT ? TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType : TF_DMG_ALWAYSGIB|TF_DMG_BLAST|m_iType ), "pumpkindeath" );
                                                 }
@@ -2040,7 +2048,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                          * -------------------------------------------------- */
                         if ( m_bNoBackstab_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Spy && m_iCustom == TF_CUSTOM_BACKSTAB )
                         {
-                            m_iType = TF_DMG_MELEE;
+                            if ( m_iNoBackstab_Crit[m_iAttacker][m_iSlot] == 0 ) m_iType = TF_DMG_MELEE;
                             m_flDamage = m_flNoBackstab_Damage[m_iAttacker][m_iSlot];
                         }
 
@@ -2378,19 +2386,22 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
                         }
                     }
                     
-                    NormalizeVector( m_flForce, m_flForce );
-                    if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
-                    
-                    new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
-                    if ( fScale < 175.0 ) fScale = 175.0;
-                    if ( fScale > 1750.0 ) fScale = 1750.0;
-                    ScaleVector( m_flForce, fScale );
-                    if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
-                    
-                    decl Float:vClientVelocity[3];
-                    GetVelocity( m_iVictim, vClientVelocity );
-                    AddVectors( vClientVelocity, m_flForce, vClientVelocity );
-                    TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                    if ( m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
+                    {
+                        NormalizeVector( m_flForce, m_flForce );
+                        if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
+                        
+                        new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
+                        if ( fScale < 175.0 ) fScale = 175.0;
+                        if ( fScale > 1750.0 ) fScale = 1750.0;
+                        ScaleVector( m_flForce, fScale );
+                        if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
+                        
+                        decl Float:vClientVelocity[3];
+                        GetVelocity( m_iVictim, vClientVelocity );
+                        AddVectors( vClientVelocity, m_flForce, vClientVelocity );
+                        TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                    }
 
                     new Float:flPos1[3];
                     GetClientEyePosition( m_iVictim, flPos1 );
@@ -2419,7 +2430,7 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
                                             // Begin the reduction at 73.0 HU.
                                             new Float:dmg_reduction = 1.0;
                                             if ( distance > 73.0 )
-                                                dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.5 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
+                                                dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
                 
                                             DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
                                         }
