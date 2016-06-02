@@ -2287,7 +2287,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     m_flDamage = 0.0;
             }
         //-//
-            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) > (1 - FloatDiv( GetClientHealth( m_iVictim )+0.0, TF2_GetClientMaxHealth( m_iVictim )+0.0 ) ) * 100.0 ? (1 - FloatDiv( GetClientHealth( m_iVictim )+0.0, TF2_GetClientMaxHealth( m_iVictim )+0.0 ) ) * 100.0 : GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) ) >= 1.0 )
+            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 < ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ? GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 : ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ) >= 1 )
                 m_flDamage = 0.0;
         //-//
             if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) && m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) )
