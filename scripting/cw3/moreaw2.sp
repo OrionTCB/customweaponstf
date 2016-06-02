@@ -935,9 +935,9 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) )
     {
         if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) )
-            TF2Attrib_SetByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
+            TF2Attrib_SetByName( m_iClient, "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
         else
-            TF2Attrib_SetByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
+            TF2Attrib_SetByName( m_iClient, "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
     }
 
     return m_iButtons;
@@ -1953,7 +1953,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                                                     // Limit the minimum damage to 50%
                                                     // Begin the reduction at 73.0 HU.
                                                     new Float:dmg_reduction = 1.0;
-                                                    if ( distance > 73.0 )
+                                                    if ( distance >= 73.0 )
                                                         dmg_reduction = ( m_flDamage * ( m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
 
                                                     DealDamage( i, RoundToFloor( ( ( m_iExplosiveDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, ( m_iType & TF_DMG_CRIT ? TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType : TF_DMG_ALWAYSGIB|TF_DMG_BLAST|m_iType ), "pumpkindeath" );
@@ -2066,7 +2066,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                             GetClientAbsOrigin( m_iVictim, flPos2 );
                                                 
                             new Float:distance = GetVectorDistance( flPos1, flPos2 );
-                            if ( distance < m_flMiniCritDisguisedCLOSERANGE_Range[m_iAttacker][m_iSlot] )  TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
+                            if ( distance <= m_flMiniCritDisguisedCLOSERANGE_Range[m_iAttacker][m_iSlot] )  TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
                         }
                     //-//
                         if ( m_bCritDisguisedCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && !( m_iType & TF_DMG_CRIT ) && TF2_IsPlayerInCondition( m_iAttacker, TFCond_Disguised ) && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Spy )
@@ -2076,7 +2076,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                             GetClientAbsOrigin( m_iVictim, flPos2 );
                                                 
                             new Float:distance = GetVectorDistance( flPos1, flPos2 );
-                            if ( distance < m_flCritDisguisedCLOSERANGE_Range[m_iAttacker][m_iSlot] ) m_iType = TF_DMG_CRIT|m_iType;
+                            if ( distance <= m_flCritDisguisedCLOSERANGE_Range[m_iAttacker][m_iSlot] ) m_iType = TF_DMG_CRIT|m_iType;
                         }
                     //-//
                         if ( m_bCritHealingMedic_ATTRIBUTE[m_iAttacker][m_iSlot] && !( m_iType & TF_DMG_CRIT ) ) {
@@ -2429,7 +2429,7 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
                                             // Limit the minimum damage to 50%
                                             // Begin the reduction at 73.0 HU.
                                             new Float:dmg_reduction = 1.0;
-                                            if ( distance > 73.0 )
+                                            if ( distance >= 73.0 )
                                                 dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
                 
                                             DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
@@ -2557,7 +2557,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
             {
                 new m_iWeapon = g_iLastWeapon[m_iKiller];
                 new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon, m_iInflictor );
-                if ( m_iWeapon != -1 && m_bHasAttribute[m_iKiller][m_iSlot] )
+                if ( m_bHasAttribute[m_iKiller][m_iSlot] )
                 {
                     if ( m_bUberchargeOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
                         TF2_SetClientUberLevel( m_iKiller, TF2_GetClientUberLevel( m_iKiller ) + m_flUberchargeOnKill_Amount[m_iKiller][m_iSlot] );
