@@ -204,6 +204,11 @@ new m_iBANOnKillHit_KickOrBan[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bTeleportToVictimOnKill_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 
+new bool:m_bScareOnKill_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flScareOnKill_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flScareOnKill_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iScareOnKill_StunLock[MAXPLAYERS + 1][MAXSLOTS + 1];
+
 
     /* On Damage
      * ---------------------------------------------------------------------- */
@@ -987,22 +992,25 @@ ATTRIBUTE_PSYCHO( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new melee = GetAttributeValueI( m_iClient, _, m_bPsycho_ATTRIBUTE, m_iPsycho_Melee );
         new Float:regen = GetAttributeValueF( m_iClient, _, m_bPsycho_ATTRIBUTE, m_flPsycho_RegenPct );
 
-        if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 || TF2_IsPlayerInCondition( m_iClient, TFCond_Taunting ) )
+        if ( HasAttribute( m_iClient, _, m_bPsycho_ATTRIBUTE ) )
         {
-            if ( m_flFloats[m_iClient][m_flPyschoCharge] == 100.0 && m_hTimers[m_iClient][m_hPsycho_TimerDuration] == INVALID_HANDLE )
+            if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 || TF2_IsPlayerInCondition( m_iClient, TFCond_Taunting ) )
             {
-                m_hTimers[m_iClient][m_hPsycho_TimerDuration] = CreateTimer( duration, m_tPsycho_TimerDuration, m_iClient );
-                FakeClientCommand( m_iClient, "taunt" );
-                TF2_AddCondition( m_iClient, TFCond_MegaHeal, duration );
-                TF2_AddCondition( m_iClient, TFCond_SpeedBuffAlly, duration );
-                TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, duration );
-                TF2_AddCondition( m_iClient, TFCond_Sapped, duration );
-                if ( melee == 1 ) {
-                    TF2_AddCondition( m_iClient, TFCond_RestrictToMelee, duration );
-                    TF2_SetClientSlot( m_iClient, 2 );
+                if ( m_flFloats[m_iClient][m_flPyschoCharge] == 100.0 && m_hTimers[m_iClient][m_hPsycho_TimerDuration] == INVALID_HANDLE )
+                {
+                    m_hTimers[m_iClient][m_hPsycho_TimerDuration] = CreateTimer( duration, m_tPsycho_TimerDuration, m_iClient );
+                    FakeClientCommand( m_iClient, "taunt" );
+                    TF2_AddCondition( m_iClient, TFCond_MegaHeal, duration );
+                    TF2_AddCondition( m_iClient, TFCond_SpeedBuffAlly, duration );
+                    TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, duration );
+                    TF2_AddCondition( m_iClient, TFCond_Sapped, duration );
+                    if ( melee == 1 ) {
+                        TF2_AddCondition( m_iClient, TFCond_RestrictToMelee, duration );
+                        TF2_SetClientSlot( m_iClient, 2 );
+                    }
+                    TF2_RemoveCondition( m_iClient, TFCond_Dazed );
+                    EmitSoundToClient( m_iClient, SOUND_TBASH );
                 }
-                TF2_RemoveCondition( m_iClient, TFCond_Dazed );
-                EmitSoundToClient( m_iClient, SOUND_TBASH );
             }
         }
         if ( m_hTimers[m_iClient][m_hPsycho_TimerDuration] != INVALID_HANDLE )
@@ -2267,8 +2275,20 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bTeleportToVictimOnKill_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
+    /* Scare On Kill
+     *
+     * ---------------------------------------------------------------------- */
+    else if ( StrEqual( m_sAttribute, "scare on kill" ) )
+    {
+        new String:m_sValues[3][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
-
+        m_flScareOnKill_Duration[m_iClient][m_iSlot]    = StringToFloat( m_sValues[0] );
+        m_flScareOnKill_Radius[m_iClient][m_iSlot]      = StringToFloat( m_sValues[1] );
+        m_iScareOnKill_StunLock[m_iClient][m_iSlot]     = StringToInt( m_sValues[2] );
+        m_bScareOnKill_ATTRIBUTE[m_iClient][m_iSlot]    = true;
+        m_aAction = Plugin_Handled;
+    }
 
     if ( !m_bHasAttribute[m_iClient][m_iSlot] ) m_bHasAttribute[m_iClient][m_iSlot] = bool:m_aAction;
     return m_aAction;
@@ -2395,6 +2415,13 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_iBANOnKillHit_KickOrBan[m_iClient][m_iSlot]            = 0;
 
             m_bTeleportToVictimOnKill_ATTRIBUTE[m_iClient][m_iSlot]  = false;
+
+            m_bScareOnKill_ATTRIBUTE[m_iClient][m_iSlot]    = true;
+            m_flScareOnKill_Duration[m_iClient][m_iSlot]    = 0.0;
+            m_flScareOnKill_Radius[m_iClient][m_iSlot]      = 0.0;
+            m_iScareOnKill_StunLock[m_iClient][m_iSlot]     = 0;
+
+
 
 
             /* On Damage
@@ -2671,7 +2698,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     m_flDamage = 0.0;
             }
         //-//
-            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 < ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ? GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 : ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ) >= 1 )
+            if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 < ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ? GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 : ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ) >= 100 )
                 m_flDamage = 0.0;
         //-//
             if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) && m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) )
@@ -3568,6 +3595,42 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                         TeleportEntity( m_iKiller, m_flPos, NULL_VECTOR, NULL_VECTOR );
                     }
                 }
+            //-//
+                if ( m_bScareOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                {
+                    new Float:m_flPos1[3];
+                    GetClientAbsOrigin( m_iVictim, m_flPos1 );
+
+                    new Float:radius = m_flScareOnKill_Radius[m_iKiller][m_iSlot];
+                    new Float:duration = m_flScareOnKill_Duration[m_iKiller][m_iSlot];
+
+                    for ( new i = 1 ; i <= MaxClients ; i++ )
+                    {
+                        if ( i != m_iKiller && i != m_iVictim && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iKiller ) )
+                        {
+                            if ( !HasInvulnerabilityCond( i ) )
+                            {
+                                new Float:m_flPos2[3];
+                                GetClientAbsOrigin( i, m_flPos2 );
+
+                                new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                                if ( distance <= distance )
+                                {
+                                    if ( m_hTimers[i][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                                    {
+                                        if ( m_iScareOnKill_StunLock[m_iKiller][m_iSlot] == 1 ) m_hTimers[i][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, i );
+                                            
+                                        new Float:stun_reduction = 1.0;
+                                        if ( distance > 73.0 )
+                                            stun_reduction = ( duration * ( radius - ( ( distance - 73.0 ) * 0.66 ) ) / radius ) / duration;
+
+                                        TF2_StunPlayer( i, duration * stun_reduction, 1.0, TF_STUNFLAGS_GHOSTSCARE, m_iKiller );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -3807,7 +3870,7 @@ public Action:m_tDamageReceivedUnleashedDeath_TimerDelay( Handle:timer, any:m_iV
                                 // Begin the reduction at 73.0 HU.
                                 new Float:dmg_reduction = 1.0;
                                 if ( distance > 73.0 )
-                                    dmg_reduction = ( m_flFloats[m_iVictim][m_flDamageReceived] * ( final_radius - ( ( distance - 73.0 ) * 0.5 ) ) / final_radius ) / m_flFloats[m_iVictim][m_flDamageReceived];
+                                    dmg_reduction = ( m_flFloats[m_iVictim][m_flDamageReceived] * ( final_radius - ( ( distance - 73.0 ) * 0.66 ) ) / final_radius ) / m_flFloats[m_iVictim][m_flDamageReceived];
 
                                 DealDamage( i, RoundToFloor( m_flFloats[m_iVictim][m_flDamageReceived] * dmg_reduction ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL, "pumpkindeath" );
                             }
