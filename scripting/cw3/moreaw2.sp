@@ -1823,8 +1823,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
     if ( m_flDamage >= 1.0
         && IsValidClient( m_iAttacker ) )
     {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim )
             && m_iAttacker != m_iVictim )
@@ -1879,8 +1877,9 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 
                 if ( m_flDamage >= 1.0 && m_iWeapon != -1 )
                 {
+                    new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
                     g_iLastWeapon[m_iAttacker] = m_iWeapon;
-                    if ( m_bHasAttribute[m_iAttacker][m_iSlot] )
+                    if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                     {
 
                         /* Mutiplies and Divides.
@@ -2120,8 +2119,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
     if ( m_flDamage >= 1.0
         && IsValidClient( m_iAttacker ) )
     {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim ) )
         {
@@ -2168,175 +2165,178 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 }
             }
 
-            if ( m_iWeapon != -1
-                && m_bHasAttribute[m_iAttacker][m_iSlot] )
+            if ( m_iWeapon != -1 )
             {
-                if ( m_bMarkVictim_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
+                if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                 {
-                    g_pMarker[m_iVictim] = m_iAttacker;
-                    if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] != INVALID_HANDLE )
+                    if ( m_bMarkVictim_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        ClearTimer( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] );
-                        s_bGlowEnabled[m_iVictim] = false;
-                        m_iIntegers[m_iAttacker][m_iMarkedVictim]--;
-                    }
-                    if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] == INVALID_HANDLE && !s_bGlowEnabled[m_iVictim] && m_iIntegers[m_iAttacker][m_iMarkedVictim] < m_iMarkVictim_MaximumStack[m_iAttacker][m_iSlot] )
-                    {
-                        m_iIntegers[m_iAttacker][m_iMarkedVictim]++;
-                        SetEntProp( m_iVictim, Prop_Send, "m_bGlowEnabled", 1 );
-                        s_bGlowEnabled[m_iVictim] = true;
+                        g_pMarker[m_iVictim] = m_iAttacker;
+                        if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] != INVALID_HANDLE )
+                        {
+                            ClearTimer( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] );
+                            s_bGlowEnabled[m_iVictim] = false;
+                            m_iIntegers[m_iAttacker][m_iMarkedVictim]--;
+                        }
+                        if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] == INVALID_HANDLE && !s_bGlowEnabled[m_iVictim] && m_iIntegers[m_iAttacker][m_iMarkedVictim] < m_iMarkVictim_MaximumStack[m_iAttacker][m_iSlot] )
+                        {
+                            m_iIntegers[m_iAttacker][m_iMarkedVictim]++;
+                            SetEntProp( m_iVictim, Prop_Send, "m_bGlowEnabled", 1 );
+                            s_bGlowEnabled[m_iVictim] = true;
 
-                        new Handle:m_hData01 = CreateDataPack();
-                        m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] = CreateDataTimer( m_flMarkVictim_Duration[m_iAttacker][m_iSlot], m_tMarkVictim, m_hData01 );
-                        WritePackCell( m_hData01, m_iVictim );
-                        WritePackCell( m_hData01, m_iAttacker );
+                            new Handle:m_hData01 = CreateDataPack();
+                            m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] = CreateDataTimer( m_flMarkVictim_Duration[m_iAttacker][m_iSlot], m_tMarkVictim, m_hData01 );
+                            WritePackCell( m_hData01, m_iVictim );
+                            WritePackCell( m_hData01, m_iAttacker );
+                        }
                     }
-                }
-            //-//
-                if ( m_bMarkVictimForDeath_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    g_pMarker[m_iVictim] = m_iAttacker;
-                    if ( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] != INVALID_HANDLE )
+                //-//
+                    if ( m_bMarkVictimForDeath_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        ClearTimer( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] );
-                        m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath]--;
-                    }
-                    if ( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] == INVALID_HANDLE && m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath] < m_iMarkVictimForDeath_MaximumStack[m_iAttacker][m_iSlot] )
-                    {
-                        m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath]++;
-                        TF2_AddCondition( m_iVictim, TFCond_MarkedForDeath, m_flMarkVictimForDeath_Duration[m_iAttacker][m_iSlot] );
+                        g_pMarker[m_iVictim] = m_iAttacker;
+                        if ( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] != INVALID_HANDLE )
+                        {
+                            ClearTimer( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] );
+                            m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath]--;
+                        }
+                        if ( m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] == INVALID_HANDLE && m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath] < m_iMarkVictimForDeath_MaximumStack[m_iAttacker][m_iSlot] )
+                        {
+                            m_iIntegers[m_iAttacker][m_iMarkedVictimForDeath]++;
+                            TF2_AddCondition( m_iVictim, TFCond_MarkedForDeath, m_flMarkVictimForDeath_Duration[m_iAttacker][m_iSlot] );
 
-                        new Handle:m_hData02 = CreateDataPack();
-                        m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] = CreateDataTimer( m_flMarkVictimForDeath_Duration[m_iAttacker][m_iSlot], m_tMarkVictimForDeath, m_hData02 );
-                        WritePackCell( m_hData02, m_iVictim );
-                        WritePackCell( m_hData02, m_iAttacker );
+                            new Handle:m_hData02 = CreateDataPack();
+                            m_hTimers[m_iVictim][m_hMarkVictimForDeath_TimerDuration] = CreateDataTimer( m_flMarkVictimForDeath_Duration[m_iAttacker][m_iSlot], m_tMarkVictimForDeath, m_hData02 );
+                            WritePackCell( m_hData02, m_iVictim );
+                            WritePackCell( m_hData02, m_iAttacker );
+                        }
                     }
-                }
-            //-//
-                if ( m_bDisableSlot_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( MakeSlotSleep( m_iVictim, m_iAttacker, m_iDisableSlot_Slot[m_iAttacker][m_iSlot], m_flDisableSlot_Duration[m_iAttacker][m_iSlot] ) )
+                //-//
+                    if ( m_bDisableSlot_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        EmitSoundToAll( SOUND_SHIELD_BREAK, m_iVictim, SNDCHAN_WEAPON );
-                        EmitSoundToClient( m_iVictim, SOUND_SHIELD_BREAK );
-                        EmitSoundToClient( m_iAttacker, SOUND_SHIELD_BREAK );
+                        if ( MakeSlotSleep( m_iVictim, m_iAttacker, m_iDisableSlot_Slot[m_iAttacker][m_iSlot], m_flDisableSlot_Duration[m_iAttacker][m_iSlot] ) )
+                        {
+                            EmitSoundToAll( SOUND_SHIELD_BREAK, m_iVictim, SNDCHAN_WEAPON );
+                            EmitSoundToClient( m_iVictim, SOUND_SHIELD_BREAK );
+                            EmitSoundToClient( m_iAttacker, SOUND_SHIELD_BREAK );
+                        }
                     }
-                }
-            //-//
-                if ( m_bDisorientateOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    new Float:m_vEyeAngles[3];
-                    new Float:m_flSpin = m_flDamage;
-                    if ( m_flSpin > 100.0 ) m_flSpin = 100.0;
-                    if ( m_flSpin < 20.0 ) m_flSpin = 20.0;
+                //-//
+                    if ( m_bDisorientateOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        new Float:m_vEyeAngles[3];
+                        new Float:m_flSpin = m_flDamage;
+                        if ( m_flSpin > 100.0 ) m_flSpin = 100.0;
+                        if ( m_flSpin < 20.0 ) m_flSpin = 20.0;
+                                
+                        if ( m_flSpin <= 100.0 && m_flSpin >= 20.0 )
+                        {
+                            GetClientEyeAngles( m_iVictim, m_vEyeAngles );
+                            m_vEyeAngles[0] += GetRandomFloat( -1.0, 1.0 ) * m_flSpin * 0.6;
+                            m_vEyeAngles[1] += GetRandomFloat( -1.0, 1.0 ) * m_flSpin * 0.6;
+                            TeleportEntity( m_iVictim, NULL_VECTOR, m_vEyeAngles, NULL_VECTOR );
+                                    
+                            decl String:m_strSound[PLATFORM_MAX_PATH];
+                            new m_iRandom = GetRandomInt( 1,3 );
+                            if ( m_iRandom == 1 ) Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_A );
+                            if ( m_iRandom == 2 ) Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_B );
+                            else Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_C );
                             
-                    if ( m_flSpin <= 100.0 && m_flSpin >= 20.0 )
+                            EmitSoundToClient( m_iVictim, m_strSound, _, _, SNDLEVEL_SCREAMING );
+                                    
+                            if ( TF2_ShouldReveal( m_iVictim ) )
+                            {
+                                EmitSoundToClient( m_iAttacker, m_strSound, m_iVictim, _, SNDLEVEL_TRAIN );
+                                decl Float:m_vPos[3];
+                                GetClientEyePosition( m_iVictim, m_vPos );
+                                m_vPos[2] += 2.0;
+                                ShowText( m_iVictim, "hit_text" );
+                            }
+                        }
+                    }
+                //-//
+                    if ( m_bIncreasedPushScale_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        GetClientEyeAngles( m_iVictim, m_vEyeAngles );
-                        m_vEyeAngles[0] += GetRandomFloat( -1.0, 1.0 ) * m_flSpin * 0.6;
-                        m_vEyeAngles[1] += GetRandomFloat( -1.0, 1.0 ) * m_flSpin * 0.6;
-                        TeleportEntity( m_iVictim, NULL_VECTOR, m_vEyeAngles, NULL_VECTOR );
+                        decl Float:m_vAng[3], Float:m_vVelocity[3];
+                        GetClientEyeAngles( m_iAttacker, m_vAng );
+                        m_vAng[0] = -40.0;
+                        AnglesToVelocity( m_vAng, m_vVelocity, ( 200.0 * m_flIncreasedPushScale_Scale[m_iAttacker][m_iSlot] ) ); //200.0
                                 
-                        decl String:m_strSound[PLATFORM_MAX_PATH];
-                        new m_iRandom = GetRandomInt( 1,3 );
-                        if ( m_iRandom == 1 ) Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_A );
-                        if ( m_iRandom == 2 ) Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_B );
-                        else Format( m_strSound, sizeof( m_strSound ), SOUND_IMPACT_C );
-                        
-                        EmitSoundToClient( m_iVictim, m_strSound, _, _, SNDLEVEL_SCREAMING );
-                                
-                        if ( TF2_ShouldReveal( m_iVictim ) )
+                        TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, m_vVelocity );
+                    }
+                //-//
+                    if ( m_bDisarmSilent_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        MakeSlotSleep( m_iVictim, m_iAttacker, 0, m_flDisarmSilent_Duration[m_iAttacker][m_iSlot], false );
+                        MakeSlotSleep( m_iVictim, m_iAttacker, 1, m_flDisarmSilent_Duration[m_iAttacker][m_iSlot], false );
+                    }
+                    if ( m_iVictim != m_iAttacker )
+                    {
+                        if ( m_bRageDecrease_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            EmitSoundToClient( m_iAttacker, m_strSound, m_iVictim, _, SNDLEVEL_TRAIN );
-                            decl Float:m_vPos[3];
-                            GetClientEyePosition( m_iVictim, m_vPos );
-                            m_vPos[2] += 2.0;
-                            ShowText( m_iVictim, "hit_text" );
-                        }
-                    }
-                }
-            //-//
-                if ( m_bIncreasedPushScale_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    decl Float:m_vAng[3], Float:m_vVelocity[3];
-                    GetClientEyeAngles( m_iAttacker, m_vAng );
-                    m_vAng[0] = -40.0;
-                    AnglesToVelocity( m_vAng, m_vVelocity, ( 200.0 * m_flIncreasedPushScale_Scale[m_iAttacker][m_iSlot] ) ); //200.0
-                            
-                    TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, m_vVelocity );
-                }
-            //-//
-                if ( m_bDisarmSilent_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    MakeSlotSleep( m_iVictim, m_iAttacker, 0, m_flDisarmSilent_Duration[m_iAttacker][m_iSlot], false );
-                    MakeSlotSleep( m_iVictim, m_iAttacker, 1, m_flDisarmSilent_Duration[m_iAttacker][m_iSlot], false );
-                }
-                if ( m_iVictim != m_iAttacker )
-                {
-                    if ( m_bRageDecrease_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        m_bBools[m_iAttacker][m_bDrainRage] = false;
+                            m_bBools[m_iAttacker][m_bDrainRage] = false;
 
-                        if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] );
-                        if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && GetEntPropFloat( m_iAttacker, Prop_Send, "m_flRageMeter" ) != 0.0 && !m_bBools[m_iAttacker][m_bDrainRage] )
-                            m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] = CreateTimer( 10.0, m_tRageDecrease, m_iAttacker );
-                    }
-                //-//
-                    if ( m_bMissCauseDelay_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        if ( m_hTimers[m_iAttacker][m_hMissCauseDelay_TimerDuration] != INVALID_HANDLE )
-                            ClearTimer( m_hTimers[m_iAttacker][m_hMissCauseDelay_TimerDuration] );
-                    }
-                //-//
-                    if ( m_bDemoChargeOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        new Float:m_flChargeMeter = GetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter" );
-                        m_flChargeMeter += m_flDemoChargeOnHit_Charge[m_iAttacker][m_iSlot];
-                                
-                        if ( m_flChargeMeter >= 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 100.0 );
-                        if ( m_flChargeMeter < 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", m_flChargeMeter );
-                    }
-                //-//
-                    if ( m_bPissYourselfOnMiss_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                        m_bBools[m_iAttacker][m_bLastWasMissPISS] = false;
-                //-//
-                    if ( m_bJumpBonus_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        if ( ( m_iIntegers[m_iAttacker][m_iJumpAmount] + m_iIntegers[m_iAttacker][m_iJumpAmountBase] ) > m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] )
+                            if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] );
+                            if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && GetEntPropFloat( m_iAttacker, Prop_Send, "m_flRageMeter" ) != 0.0 && !m_bBools[m_iAttacker][m_bDrainRage] )
+                                m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] = CreateTimer( 10.0, m_tRageDecrease, m_iAttacker );
+                        }
+                    //-//
+                        if ( m_bMissCauseDelay_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            m_iIntegers[m_iAttacker][m_iJumpAmount] += m_iJumpBonus_Hit[m_iAttacker][m_iSlot];
-                            if ( m_iIntegers[m_iAttacker][m_iJumpAmount] > m_iJumpBonus_MaxJumps[m_iAttacker][m_iSlot] ) m_iIntegers[m_iAttacker][m_iJumpAmount] = m_iJumpBonus_MaxJumps[m_iAttacker][m_iSlot];
+                            if ( m_hTimers[m_iAttacker][m_hMissCauseDelay_TimerDuration] != INVALID_HANDLE )
+                                ClearTimer( m_hTimers[m_iAttacker][m_hMissCauseDelay_TimerDuration] );
                         }
-                        else
+                    //-//
+                        if ( m_bDemoChargeOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            if ( m_iIntegers[m_iAttacker][m_iJumpAmount] < 0 ) m_iIntegers[m_iAttacker][m_iJumpAmount] = 0;
-                            /* ** Hacky way to set correct jumps because the Unique Base Jump make the 'last' ( 1/max ) not used, Idk why, but that's not a big deal. ** */
-                            if ( m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] == 1 && m_iIntegers[m_iAttacker][m_iJumpAmount] == 0 ) m_iIntegers[m_iAttacker][m_iJumpAmount] += ( 1+m_iJumpBonus_Hit[m_iAttacker][m_iSlot] );
-                            /* ** ! ** */
-                            else if ( m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] == 2 ) m_iIntegers[m_iAttacker][m_iJumpAmount] += m_iJumpBonus_Hit[m_iAttacker][m_iSlot];
+                            new Float:m_flChargeMeter = GetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter" );
+                            m_flChargeMeter += m_flDemoChargeOnHit_Charge[m_iAttacker][m_iSlot];
+                                    
+                            if ( m_flChargeMeter >= 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 100.0 );
+                            if ( m_flChargeMeter < 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", m_flChargeMeter );
                         }
-                    }
-                    if ( m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        new Float:m_flValue = m_flDamage * ( m_flLevelUpSystem_DamageDone_Charge[m_iAttacker][m_iSlot] * 0.01 );
-
-                        if ( m_hTimers[m_iAttacker][m_hDamageDone_TimerDuration] == INVALID_HANDLE ) {
-                            if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 100.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += m_flValue; // from 0 to 1
-                            else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 200.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 100.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 1.5 ); // from 1 to 2
-                            else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 300.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 200.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 2.25 ); // from 2 to 3
-                            else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 400.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 300.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 3.0 ); // from 3 to 4
+                    //-//
+                        if ( m_bPissYourselfOnMiss_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            m_bBools[m_iAttacker][m_bLastWasMissPISS] = false;
+                    //-//
+                        if ( m_bJumpBonus_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( ( m_iIntegers[m_iAttacker][m_iJumpAmount] + m_iIntegers[m_iAttacker][m_iJumpAmountBase] ) > m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] )
+                            {
+                                m_iIntegers[m_iAttacker][m_iJumpAmount] += m_iJumpBonus_Hit[m_iAttacker][m_iSlot];
+                                if ( m_iIntegers[m_iAttacker][m_iJumpAmount] > m_iJumpBonus_MaxJumps[m_iAttacker][m_iSlot] ) m_iIntegers[m_iAttacker][m_iJumpAmount] = m_iJumpBonus_MaxJumps[m_iAttacker][m_iSlot];
+                            }
+                            else
+                            {
+                                if ( m_iIntegers[m_iAttacker][m_iJumpAmount] < 0 ) m_iIntegers[m_iAttacker][m_iJumpAmount] = 0;
+                                /* ** Hacky way to set correct jumps because the Unique Base Jump make the 'last' ( 1/max ) not used, Idk why, but that's not a big deal. ** */
+                                if ( m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] == 1 && m_iIntegers[m_iAttacker][m_iJumpAmount] == 0 ) m_iIntegers[m_iAttacker][m_iJumpAmount] += ( 1+m_iJumpBonus_Hit[m_iAttacker][m_iSlot] );
+                                /* ** ! ** */
+                                else if ( m_iJumpBonus_BaseJumps[m_iAttacker][m_iSlot] == 2 ) m_iIntegers[m_iAttacker][m_iJumpAmount] += m_iJumpBonus_Hit[m_iAttacker][m_iSlot];
+                            }
                         }
+                        if ( m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            new Float:m_flValue = m_flDamage * ( m_flLevelUpSystem_DamageDone_Charge[m_iAttacker][m_iSlot] * 0.01 );
 
-                        if ( m_flFloats[m_iAttacker][m_flDamageCharge] >= 100.0 )
-                            TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLevelUpSystem_DamageDone_Lifesteal[m_iAttacker][m_iSlot], 1.0, true );
+                            if ( m_hTimers[m_iAttacker][m_hDamageDone_TimerDuration] == INVALID_HANDLE ) {
+                                if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 100.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += m_flValue; // from 0 to 1
+                                else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 200.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 100.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 1.5 ); // from 1 to 2
+                                else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 300.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 200.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 2.25 ); // from 2 to 3
+                                else if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 400.0 && m_flFloats[m_iAttacker][m_flDamageCharge] >= 300.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flValue / 3.0 ); // from 3 to 4
+                            }
 
-                        if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 0.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 0.0;
-                        if ( m_flFloats[m_iAttacker][m_flDamageCharge] > 400.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 400.0;
-                    }
-                    if ( m_bLevelUpSystem_DamageReceived_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        if ( m_flFloats[m_iAttacker][m_flTakeDamageCharge] >= 100.0 )
-                            TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLevelUpSystem_DamageReceived_Lifesteal[m_iAttacker][m_iSlot], 1.0, true );
+                            if ( m_flFloats[m_iAttacker][m_flDamageCharge] >= 100.0 )
+                                TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLevelUpSystem_DamageDone_Lifesteal[m_iAttacker][m_iSlot], 1.0, true );
+
+                            if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 0.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 0.0;
+                            if ( m_flFloats[m_iAttacker][m_flDamageCharge] > 400.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 400.0;
+                        }
+                        if ( m_bLevelUpSystem_DamageReceived_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( m_flFloats[m_iAttacker][m_flTakeDamageCharge] >= 100.0 )
+                                TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLevelUpSystem_DamageReceived_Lifesteal[m_iAttacker][m_iSlot], 1.0, true );
+                        }
                     }
                 }
             }
@@ -2354,89 +2354,90 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
     if ( m_flDamage >= 1.0
         && IsValidClient( m_iAttacker ) )
     {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim )
-            && m_iAttacker != m_iVictim
-            && m_iWeapon != -1
-            && m_bHasAttribute[m_iAttacker][m_iSlot] )
+            && m_iAttacker != m_iVictim 
+            && m_iWeapon != -1 )
         {
             if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
             {
-                if ( m_bExplosiveCriticalDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
+                if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                 {
-                    new particle = CreateEntityByName( "info_particle_system" );
-                    if ( IsValidEntity( particle ) )
+                    if ( m_bExplosiveCriticalDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        TeleportEntity( particle, m_flPosition, NULL_VECTOR, NULL_VECTOR );
-                        DispatchKeyValue( particle, "effect_name", "ExplosionCore_MidAir" );
-                        DispatchSpawn( particle );
-                        ActivateEntity( particle );
-                        AcceptEntityInput( particle, "start" );
-                        SetVariantString( "OnUser1 !self:Kill::8:-1" );
-                        AcceptEntityInput( particle, "AddOutput" );
-                        AcceptEntityInput( particle, "FireUser1" );
-                        
-                        if ( m_flFloats[m_iAttacker][m_flExplosionSound] < GetEngineTime() - 0.1 )
+                        new particle = CreateEntityByName( "info_particle_system" );
+                        if ( IsValidEntity( particle ) )
                         {
-                            new m_iRandom = GetRandomInt( 0, sizeof( g_strSoundExplosionBox )-1 );
-                            EmitSoundFromOrigin( g_strSoundExplosionBox[m_iRandom], m_flPosition );
-                            m_flFloats[m_iAttacker][m_flExplosionSound] = GetEngineTime();
-                        }
-                    }
-                    
-                    if ( m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
-                    {
-                        NormalizeVector( m_flForce, m_flForce );
-                        if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
-                        
-                        new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
-                        if ( fScale < 175.0 ) fScale = 175.0;
-                        if ( fScale > 1750.0 ) fScale = 1750.0;
-                        ScaleVector( m_flForce, fScale );
-                        if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
-                        
-                        decl Float:vClientVelocity[3];
-                        GetVelocity( m_iVictim, vClientVelocity );
-                        AddVectors( vClientVelocity, m_flForce, vClientVelocity );
-                        TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
-                    }
-
-                    new Float:flPos1[3];
-                    GetClientEyePosition( m_iVictim, flPos1 );
-                    
-                    for ( new i = 1; i <= MaxClients; i++ )
-                    {
-                        if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
-                        {
-                            if ( !HasInvulnerabilityCond( i ) )
+                            TeleportEntity( particle, m_flPosition, NULL_VECTOR, NULL_VECTOR );
+                            DispatchKeyValue( particle, "effect_name", "ExplosionCore_MidAir" );
+                            DispatchSpawn( particle );
+                            ActivateEntity( particle );
+                            AcceptEntityInput( particle, "start" );
+                            SetVariantString( "OnUser1 !self:Kill::8:-1" );
+                            AcceptEntityInput( particle, "AddOutput" );
+                            AcceptEntityInput( particle, "FireUser1" );
+                            
+                            if ( m_flFloats[m_iAttacker][m_flExplosionSound] < GetEngineTime() - 0.1 )
                             {
-                                new Float:flPos2[3];
-                                GetClientEyePosition( i, flPos2 );
-                                    
-                                new Float:distance = GetVectorDistance( flPos1, flPos2 );
-                                if ( distance <= m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] )
+                                new m_iRandom = GetRandomInt( 0, sizeof( g_strSoundExplosionBox )-1 );
+                                EmitSoundFromOrigin( g_strSoundExplosionBox[m_iRandom], m_flPosition );
+                                m_flFloats[m_iAttacker][m_flExplosionSound] = GetEngineTime();
+                            }
+                        }
+                        
+                        if ( m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
+                        {
+                            NormalizeVector( m_flForce, m_flForce );
+                            if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
+                            
+                            new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
+                            if ( fScale < 175.0 ) fScale = 175.0;
+                            if ( fScale > 1750.0 ) fScale = 1750.0;
+                            ScaleVector( m_flForce, fScale );
+                            if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
+                            
+                            decl Float:vClientVelocity[3];
+                            GetVelocity( m_iVictim, vClientVelocity );
+                            AddVectors( vClientVelocity, m_flForce, vClientVelocity );
+                            TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                        }
+
+                        new Float:flPos1[3];
+                        GetClientEyePosition( m_iVictim, flPos1 );
+                        
+                        for ( new i = 1; i <= MaxClients; i++ )
+                        {
+                            if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
+                            {
+                                if ( !HasInvulnerabilityCond( i ) )
                                 {
-                                    decl Handle:m_hSee;
-                                    ( m_hSee = INVALID_HANDLE );
-
-                                    m_hSee = TR_TraceRayFilterEx( flPos1, flPos2, MASK_SOLID, RayType_EndPoint, TraceFilterPlayer, m_iVictim );
-                                    if ( m_hSee != INVALID_HANDLE )
+                                    new Float:flPos2[3];
+                                    GetClientEyePosition( i, flPos2 );
+                                        
+                                    new Float:distance = GetVectorDistance( flPos1, flPos2 );
+                                    if ( distance <= m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] )
                                     {
-                                        if ( !TR_DidHit( m_hSee ) )
-                                        {
-                                            // Limit the minimum damage to 50%
-                                            // Begin the reduction at 73.0 HU.
-                                            new Float:dmg_reduction = 1.0;
-                                            if ( distance >= 73.0 )
-                                                dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
-                
-                                            DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
-                                        }
-                                    }
+                                        decl Handle:m_hSee;
+                                        ( m_hSee = INVALID_HANDLE );
 
-                                    CloseHandle( m_hSee );
+                                        m_hSee = TR_TraceRayFilterEx( flPos1, flPos2, MASK_SOLID, RayType_EndPoint, TraceFilterPlayer, m_iVictim );
+                                        if ( m_hSee != INVALID_HANDLE )
+                                        {
+                                            if ( !TR_DidHit( m_hSee ) )
+                                            {
+                                                // Limit the minimum damage to 50%
+                                                // Begin the reduction at 73.0 HU.
+                                                new Float:dmg_reduction = 1.0;
+                                                if ( distance >= 73.0 )
+                                                    dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
+                    
+                                                DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
+                                            }
+                                        }
+
+                                        CloseHandle( m_hSee );
+                                    }
                                 }
                             }
                         }
@@ -2453,11 +2454,11 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
 public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[], &bool:m_bResult )
 {
     if ( IsValidClient( m_iClient )
-        && IsPlayerAlive( m_iClient ) )
+        && IsPlayerAlive( m_iClient )
+        && m_iWeapon != -1 )
     {
         new m_iSlot = TF2_GetWeaponSlot( m_iClient, m_iWeapon );
-        if ( m_iWeapon != -1
-            && m_bHasAttribute[m_iClient][m_iSlot] )
+        if ( m_iSlot != -1 && m_bHasAttribute[m_iClient][m_iSlot] )
         {
             if ( m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot] )
             {
@@ -2508,7 +2509,6 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
 {
     new m_iVictim = GetClientOfUserId( GetEventInt( m_hEvent, "userid" ) );
     new m_iKiller = GetClientOfUserId( GetEventInt( m_hEvent, "attacker" ) );
-    new m_iInflictor = GetClientOfUserId( GetEventInt( m_hEvent, "inflictor_entindex" ) );
     new bool:m_bFeignDeath = bool:( GetEventInt( m_hEvent, "death_flags" ) & TF_DEATHFLAG_DEADRINGER );
 
     if ( IsValidClient( m_iVictim ) )
@@ -2555,18 +2555,24 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         {
             if ( IsValidClient( m_iKiller ) )
             {
-                new m_iWeapon = g_iLastWeapon[m_iKiller];
-                new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon, m_iInflictor );
-                if ( m_bHasAttribute[m_iKiller][m_iSlot] )
+                if ( g_iLastWeapon[m_iKiller] != -1 ) 
                 {
-                    if ( m_bUberchargeOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
-                        TF2_SetClientUberLevel( m_iKiller, TF2_GetClientUberLevel( m_iKiller ) + m_flUberchargeOnKill_Amount[m_iKiller][m_iSlot] );
-                //-//
-                    if ( m_bJumpBonus_ATTRIBUTE[m_iKiller][m_iSlot] )
+                    new m_iWeapon = g_iLastWeapon[m_iKiller];
+                    if ( m_iWeapon != -1 )
                     {
-                        m_iIntegers[m_iKiller][m_iJumpAmount] += m_iJumpBonus_Kill[m_iKiller][m_iSlot];
+                        new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon );
+                        if ( m_iSlot != -1 && m_bHasAttribute[m_iKiller][m_iSlot] )
+                        {
+                            if ( m_bUberchargeOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                                TF2_SetClientUberLevel( m_iKiller, TF2_GetClientUberLevel( m_iKiller ) + m_flUberchargeOnKill_Amount[m_iKiller][m_iSlot] );
+                        //-//
+                            if ( m_bJumpBonus_ATTRIBUTE[m_iKiller][m_iSlot] )
+                            {
+                                m_iIntegers[m_iKiller][m_iJumpAmount] += m_iJumpBonus_Kill[m_iKiller][m_iSlot];
 
-                        if ( m_iIntegers[m_iKiller][m_iJumpAmount] > m_iJumpBonus_MaxJumps[m_iKiller][m_iSlot] ) m_iIntegers[m_iKiller][m_iJumpAmount] = m_iJumpBonus_MaxJumps[m_iKiller][m_iSlot];
+                                if ( m_iIntegers[m_iKiller][m_iJumpAmount] > m_iJumpBonus_MaxJumps[m_iKiller][m_iSlot] ) m_iIntegers[m_iKiller][m_iJumpAmount] = m_iJumpBonus_MaxJumps[m_iKiller][m_iSlot];
+                            }
+                        }
                     }
                 }
             }
