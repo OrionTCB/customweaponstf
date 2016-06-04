@@ -2709,16 +2709,15 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
         {
             if ( IsValidClient( m_iAttacker ) )
             {
-                new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
                 if ( IsValidClient( m_iVictim )
                     && !HasInvulnerabilityCond( m_iVictim )
                     && m_iAttacker != m_iVictim )
                 {
                     if ( m_iWeapon != -1 )
                     {
+                        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
                         g_iLastWeapon[m_iAttacker] = m_iWeapon;
-                        if ( m_bHasAttribute[m_iAttacker][m_iSlot] )
+                        if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                         {
 
                             /* Mutiplies and Divides.
@@ -3059,8 +3058,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
     if ( m_flDamage >= 1.0
         && IsValidClient( m_iAttacker ) )
     {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim ) )
         {
@@ -3091,249 +3088,252 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 }
             }
 
-            if ( m_iWeapon != -1
-                && m_bHasAttribute[m_iAttacker][m_iSlot] )
+            if ( m_iWeapon != -1 )
             {
-                if ( m_bHotSauceOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {   
-                    new type = m_iHotSauceOnHit_Type[m_iAttacker][m_iSlot];
-
-                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
-                    {
-                        new Handle:m_hData01 = CreateDataPack();
-                        CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
-                        WritePackFloat( m_hData01, m_flHotSauceOnHit_Duration[m_iAttacker][m_iSlot] );
-                        WritePackCell( m_hData01, m_iVictim );
-                        WritePackCell( m_hData01, m_iAttacker );
-                        WritePackCell( m_hData01, type );
-                        m_iIntegers[m_iVictim][m_iHotSauceType] = type;
-                    }
-                }
-            //-//
-                if ( m_bStunOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
+                if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                 {
-                    if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
-                    {
-                        new Float:duration = m_flStunOnHit_Duration[m_iAttacker][m_iSlot];
-                        if ( m_iStunOnHit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
-                        
-                        TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
-                        EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.4 );
-                        EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
-                    }
-                }
-            //-//
-                if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro && m_flDamage >= 1.0 )
-                {
-                    new Float:duration = m_flAfterburnCLOSERANGE_Duration[m_iAttacker][m_iSlot];
-                    if ( duration <= 0.0 ) duration = 1.0;
+                    if ( m_bHotSauceOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {   
+                        new type = m_iHotSauceOnHit_Type[m_iAttacker][m_iSlot];
 
-                    new Float:m_flPos1[3], Float:m_flPos2[3];
-                    GetClientAbsOrigin( m_iAttacker, m_flPos1 );
-                    GetClientAbsOrigin( m_iVictim, m_flPos2 );
-
-                    new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( distance <= m_flAfterburnCLOSERANGE_Range[m_iAttacker][m_iSlot] )
-                    {
-                        if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) ) {
-                            TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
-                            if ( duration > 1.0 ) { // If higher than 1 (10 seconds)
-                                if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
-                            } else if ( duration < 1.0 ) { // If lower than 1 (10 seconds)
-                                if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
-                            }
-                            
-                        }
-                    }
-                    else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
-                }
-            //-//
-                if ( m_bBleedCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    new Float:m_flPos1[3], Float:m_flPos2[3];
-                    GetClientAbsOrigin( m_iAttacker, m_flPos1 );
-                    GetClientAbsOrigin( m_iVictim, m_flPos2 );
-
-                    new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                    if ( distance <= m_flBleedCLOSERANGE_Range[m_iAttacker][m_iSlot] )
-                    {
-                        TF2_RemoveCondition( m_iVictim, TFCond_Bleeding );
-                        TF2_MakeBleed( m_iVictim, m_iAttacker, m_flBleedCLOSERANGE_Duration[m_iAttacker][m_iSlot] );
-                    }
-                }
-            //-//
-                if ( m_bChanceIgnite_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro )
-                {
-                    new Float:duration = m_flChanceIgnite_Duration[m_iAttacker][m_iSlot];
-                    if ( duration <= 0.0 ) duration = 1.0;
-
-                    if ( m_flChanceIgnite_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
-                    {
-                        if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) )
+                        if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
                         {
-                            TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
-                            if ( duration > 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
-                            else if ( duration < 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
-                        }
-                    }
-                    else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
-                }
-            //-//
-                if ( m_bChanceMadMilk_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_flChanceMadMilk_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
-                        TF2_AddCondition( m_iVictim, TFCond_Milked, m_flChanceMadMilk_Duration[m_iAttacker][m_iSlot] );
-                }
-            //-//
-                if ( m_bChanceJarate_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_flChanceJarate_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) ) 
-                        TF2_AddCondition( m_iVictim, TFCond_Jarated, m_flChanceJarate_Duration[m_iAttacker][m_iSlot] );
-                }
-            //-//
-                if ( m_bChanceBleed_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_flChanceBleed_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
-                        TF2_MakeBleed( m_iVictim, m_iAttacker, m_flChanceBleed_Duration[m_iAttacker][m_iSlot] );
-                }
-            //-//
-                if ( m_bRemoveBleeding_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    TF2_RemoveCondition( m_iVictim, TFCond_Bleeding );
-            //-//
-                if ( m_bInfiniteAfterburn_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro )
-                {
-                    if ( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] );
-                    if ( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] == INVALID_HANDLE )
-                    {
-                        TF2_IgnitePlayer( m_iVictim, m_iAttacker );
-                        g_pBurner[m_iVictim] = m_iAttacker;
-                        if ( m_iInfiniteAfterburn_Ressuply[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bInfiniteAfterburnRessuply] = true;
-                        m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] = CreateTimer( m_flInfiniteAfterburn_Duration[m_iAttacker][m_iSlot], m_tInfiniteAfterburn_TimerDuration, m_iVictim );
-                    }
-                }
-            //-//
-                if ( m_bBANOnKillHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_iBANOnKillHit_HitOrKill[m_iAttacker][m_iSlot] == 1 ) {
-                        if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty custom's power !" );
-                        else if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 2 ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iAttacker][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty custom's power !", "Custom" );
-                    }
-                }
-            //-//
-                if ( m_bDamageDoneIsSelfHurt_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    DealDamage( m_iAttacker, RoundToFloor( m_flDamage * m_flDamageDoneIsSelfHurt_Multiplier[m_iAttacker][m_iSlot] / ( m_iType & TF_DMG_CRIT ? 3.0 : 1.0 ) ), m_iWeapon, m_iType|TF_DMG_PREVENT_PHYSICS_FORCE );
-
-                if ( m_iVictim != m_iAttacker )
-                {
-                    if ( m_bDrainUbercharge_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
-                    {
-                        new Float:pct = m_flDrainUbercharge_Percentage[m_iAttacker][m_iSlot];
-                        new Float:m_flAttackerUbercharge = TF2_GetClientUberLevel( m_iAttacker );
-                        new Float:m_flVictimUbercharge = TF2_GetClientUberLevel( m_iVictim );
-
-                        if ( m_flVictimUbercharge > 0.0 && m_flAttackerUbercharge < 100.0 )
-                        {
-                            if ( m_flVictimUbercharge >= ( pct * 100.0 ) )
-                            {
-                                if ( m_flAttackerUbercharge > ( 100.0 - ( pct * 100.0 ) ) )
-                                {
-                                    m_flVictimUbercharge -= ( 100.0 - m_flAttackerUbercharge );
-                                    TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
-
-                                    TF2_SetClientUberLevel( m_iAttacker, 100.0 );
-                                } else {
-                                    m_flAttackerUbercharge += ( pct * 100.0 );
-                                    TF2_SetClientUberLevel( m_iAttacker, m_flAttackerUbercharge );
-
-                                    m_flVictimUbercharge -= ( pct * 100.0 );
-                                    TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
-                                }
-                            } else {
-                                TF2_SetClientUberLevel( m_iVictim, 0.0 );
-                                TF2_SetClientUberLevel( m_iAttacker, ( m_flAttackerUbercharge + m_flVictimUbercharge ) );
-                            }
-                        }
-                    }
-                //-//
-                    if ( m_bUberchargeOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
-                        TF2_SetClientUberLevel( m_iAttacker, TF2_GetClientUberLevel( m_iAttacker ) + m_flUberchargeOnHit_Amount[m_iAttacker][m_iSlot] );
-                //-//
-                    if ( m_bMetalOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Engineer )
-                    {
-                        new Float:metal = m_flMetalOnHit_Amount[m_iAttacker][m_iSlot];
-                        new metal_p     = TF2_GetClientMetal( m_iAttacker );
-                        new metal_n     = RoundToFloor( metal_p + ( metal < 1.0 ? metal_p * metal : metal ) );
-
-                        TF2_SetClientMetal( m_iAttacker, metal_n );
-                    }
-                //-//
-                    if ( m_bMarkVictimDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        new maxvictim = m_iMarkVictimDamage_MaximumVictim[m_iAttacker][m_iSlot];
-                        new maxstack = m_iMarkVictimDamage_MaximumDamageStack[m_iAttacker][m_iSlot];
-                        g_pMarker[m_iVictim] = m_iAttacker;
-
-                        if ( m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] != INVALID_HANDLE )
-                        {
-                            ClearTimer( m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] );
-                            m_iIntegers[m_iAttacker][m_iMarkVictimDamage]--;
-                        }
-                        if ( m_hTimers[m_iAttacker][m_hMarkVictimDamage_TimerDuration] == INVALID_HANDLE && m_iIntegers[m_iAttacker][m_iMarkVictimDamage] < maxvictim )
-                        {
-                            m_iIntegers[m_iAttacker][m_iMarkVictimDamage]++;
-                            if ( m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] < maxstack ) m_iIntegers[m_iVictim][m_iMarkVictimDamageCount]++;
-
                             new Handle:m_hData01 = CreateDataPack();
-                            m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] = CreateDataTimer( m_flMarkVictimDamage_Duration[m_iAttacker][m_iSlot], m_tMarkVictimDamage_TimerDuration, m_hData01 );
+                            CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
+                            WritePackFloat( m_hData01, m_flHotSauceOnHit_Duration[m_iAttacker][m_iSlot] );
                             WritePackCell( m_hData01, m_iVictim );
                             WritePackCell( m_hData01, m_iAttacker );
-                        }
-                        if ( m_iIntegers[m_iAttacker][m_iMarkVictimDamage] > maxvictim ) m_iIntegers[m_iAttacker][m_iMarkVictimDamage] = maxvictim;
-                        if ( m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] > maxstack ) m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] = maxstack;
-                    }
-                //-//
-                    if ( m_bHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                        TF2_HealPlayer( m_iAttacker, GetClientHealth( m_iAttacker ) * m_flHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
-                //-//
-                    if ( m_bEnemyHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                        TF2_HealPlayer( m_iAttacker, GetClientHealth( m_iVictim ) * m_flEnemyHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flEnemyHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
-                //-//
-                    if ( m_bMissingEnemyHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        if ( GetClientHealth( m_iVictim ) < TF2_GetClientMaxHealth( m_iVictim ) )
-                            TF2_HealPlayer( m_iAttacker, ( TF2_GetClientMaxHealth( m_iVictim ) - GetClientHealth( m_iVictim ) ) * m_flMissingEnemyHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flMissingEnemyHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
-                    }
-                //-//
-                    if ( m_bMCFRTD_ATTRIBUTE[m_iAttacker][m_iSlot] ) {
-                        if ( m_hTimers[m_iAttacker][m_hMCFRTD_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hMCFRTD_TimerDelay] );
-                    }
-                //-//
-                    if ( m_bPsycho_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        if ( m_flFloats[m_iAttacker][m_flPyschoCharge] < 100.0 && m_hTimers[m_iAttacker][m_hPsycho_TimerDuration] == INVALID_HANDLE )
-                        {
-                            new Float:m_flCharge = ( 2 * m_flDamage * ( 1.1 - FloatDiv( GetClientHealth( m_iAttacker )+0.0, TF2_GetClientMaxHealth( m_iAttacker )+0.0 ) ) ) * m_flPsycho_DamageResistance[m_iAttacker][m_iSlot];
-                            if ( m_flCharge < 1.0 ) m_flCharge = 1.0;
-                            m_flFloats[m_iAttacker][m_flPyschoCharge] += m_flCharge;
+                            WritePackCell( m_hData01, type );
+                            m_iIntegers[m_iVictim][m_iHotSauceType] = type;
                         }
                     }
                 //-//
-                    if ( m_bMetalOnHitDamage_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Engineer )
-                        TF2_SetClientMetal( m_iAttacker, RoundToFloor( TF2_GetClientMetal( m_iAttacker ) + ( m_flDamage * m_flMetalOnHitDamage_Multiplier[m_iAttacker][m_iSlot] ) ) );
-                //-//
-                    if ( m_bStealDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    if ( m_bStunOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
-                        if ( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] );
-                        if ( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] == INVALID_HANDLE )
+                        if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
                         {
-                            m_iIntegers[m_iAttacker][m_iStealDamageAttacker] += m_iStealDamage_Steal[m_iAttacker][m_iSlot];
-                            m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageAttacker, m_iAttacker );
+                            new Float:duration = m_flStunOnHit_Duration[m_iAttacker][m_iSlot];
+                            if ( m_iStunOnHit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
+                            
+                            TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
+                            EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.4 );
+                            EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
                         }
-                        if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] );
-                        if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] == INVALID_HANDLE )
+                    }
+                //-//
+                    if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro && m_flDamage >= 1.0 )
+                    {
+                        new Float:duration = m_flAfterburnCLOSERANGE_Duration[m_iAttacker][m_iSlot];
+                        if ( duration <= 0.0 ) duration = 1.0;
+
+                        new Float:m_flPos1[3], Float:m_flPos2[3];
+                        GetClientAbsOrigin( m_iAttacker, m_flPos1 );
+                        GetClientAbsOrigin( m_iVictim, m_flPos2 );
+
+                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                        if ( distance <= m_flAfterburnCLOSERANGE_Range[m_iAttacker][m_iSlot] )
                         {
-                            m_iIntegers[m_iVictim][m_iStealDamageVictim] += m_iStealDamage_Steal[m_iAttacker][m_iSlot];
-                            m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageVictim, m_iVictim );
+                            if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) ) {
+                                TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
+                                if ( duration > 1.0 ) { // If higher than 1 (10 seconds)
+                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
+                                } else if ( duration < 1.0 ) { // If lower than 1 (10 seconds)
+                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
+                                }
+                                
+                            }
+                        }
+                        else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
+                    }
+                //-//
+                    if ( m_bBleedCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        new Float:m_flPos1[3], Float:m_flPos2[3];
+                        GetClientAbsOrigin( m_iAttacker, m_flPos1 );
+                        GetClientAbsOrigin( m_iVictim, m_flPos2 );
+
+                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                        if ( distance <= m_flBleedCLOSERANGE_Range[m_iAttacker][m_iSlot] )
+                        {
+                            TF2_RemoveCondition( m_iVictim, TFCond_Bleeding );
+                            TF2_MakeBleed( m_iVictim, m_iAttacker, m_flBleedCLOSERANGE_Duration[m_iAttacker][m_iSlot] );
+                        }
+                    }
+                //-//
+                    if ( m_bChanceIgnite_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro )
+                    {
+                        new Float:duration = m_flChanceIgnite_Duration[m_iAttacker][m_iSlot];
+                        if ( duration <= 0.0 ) duration = 1.0;
+
+                        if ( m_flChanceIgnite_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
+                        {
+                            if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) )
+                            {
+                                TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
+                                if ( duration > 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
+                                else if ( duration < 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
+                            }
+                        }
+                        else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
+                    }
+                //-//
+                    if ( m_bChanceMadMilk_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        if ( m_flChanceMadMilk_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
+                            TF2_AddCondition( m_iVictim, TFCond_Milked, m_flChanceMadMilk_Duration[m_iAttacker][m_iSlot] );
+                    }
+                //-//
+                    if ( m_bChanceJarate_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        if ( m_flChanceJarate_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) ) 
+                            TF2_AddCondition( m_iVictim, TFCond_Jarated, m_flChanceJarate_Duration[m_iAttacker][m_iSlot] );
+                    }
+                //-//
+                    if ( m_bChanceBleed_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        if ( m_flChanceBleed_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
+                            TF2_MakeBleed( m_iVictim, m_iAttacker, m_flChanceBleed_Duration[m_iAttacker][m_iSlot] );
+                    }
+                //-//
+                    if ( m_bRemoveBleeding_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        TF2_RemoveCondition( m_iVictim, TFCond_Bleeding );
+                //-//
+                    if ( m_bInfiniteAfterburn_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro )
+                    {
+                        if ( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] );
+                        if ( m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] == INVALID_HANDLE )
+                        {
+                            TF2_IgnitePlayer( m_iVictim, m_iAttacker );
+                            g_pBurner[m_iVictim] = m_iAttacker;
+                            if ( m_iInfiniteAfterburn_Ressuply[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bInfiniteAfterburnRessuply] = true;
+                            m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] = CreateTimer( m_flInfiniteAfterburn_Duration[m_iAttacker][m_iSlot], m_tInfiniteAfterburn_TimerDuration, m_iVictim );
+                        }
+                    }
+                //-//
+                    if ( m_bBANOnKillHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                    {
+                        if ( m_iBANOnKillHit_HitOrKill[m_iAttacker][m_iSlot] == 1 ) {
+                            if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty custom's power !" );
+                            else if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 2 ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iAttacker][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty custom's power !", "Custom" );
+                        }
+                    }
+                //-//
+                    if ( m_bDamageDoneIsSelfHurt_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        DealDamage( m_iAttacker, RoundToFloor( m_flDamage * m_flDamageDoneIsSelfHurt_Multiplier[m_iAttacker][m_iSlot] / ( m_iType & TF_DMG_CRIT ? 3.0 : 1.0 ) ), m_iWeapon, m_iType|TF_DMG_PREVENT_PHYSICS_FORCE );
+
+                    if ( m_iVictim != m_iAttacker )
+                    {
+                        if ( m_bDrainUbercharge_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
+                        {
+                            new Float:pct = m_flDrainUbercharge_Percentage[m_iAttacker][m_iSlot];
+                            new Float:m_flAttackerUbercharge = TF2_GetClientUberLevel( m_iAttacker );
+                            new Float:m_flVictimUbercharge = TF2_GetClientUberLevel( m_iVictim );
+
+                            if ( m_flVictimUbercharge > 0.0 && m_flAttackerUbercharge < 100.0 )
+                            {
+                                if ( m_flVictimUbercharge >= ( pct * 100.0 ) )
+                                {
+                                    if ( m_flAttackerUbercharge > ( 100.0 - ( pct * 100.0 ) ) )
+                                    {
+                                        m_flVictimUbercharge -= ( 100.0 - m_flAttackerUbercharge );
+                                        TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
+
+                                        TF2_SetClientUberLevel( m_iAttacker, 100.0 );
+                                    } else {
+                                        m_flAttackerUbercharge += ( pct * 100.0 );
+                                        TF2_SetClientUberLevel( m_iAttacker, m_flAttackerUbercharge );
+
+                                        m_flVictimUbercharge -= ( pct * 100.0 );
+                                        TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
+                                    }
+                                } else {
+                                    TF2_SetClientUberLevel( m_iVictim, 0.0 );
+                                    TF2_SetClientUberLevel( m_iAttacker, ( m_flAttackerUbercharge + m_flVictimUbercharge ) );
+                                }
+                            }
+                        }
+                    //-//
+                        if ( m_bUberchargeOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
+                            TF2_SetClientUberLevel( m_iAttacker, TF2_GetClientUberLevel( m_iAttacker ) + m_flUberchargeOnHit_Amount[m_iAttacker][m_iSlot] );
+                    //-//
+                        if ( m_bMetalOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Engineer )
+                        {
+                            new Float:metal = m_flMetalOnHit_Amount[m_iAttacker][m_iSlot];
+                            new metal_p     = TF2_GetClientMetal( m_iAttacker );
+                            new metal_n     = RoundToFloor( metal_p + ( metal < 1.0 ? metal_p * metal : metal ) );
+
+                            TF2_SetClientMetal( m_iAttacker, metal_n );
+                        }
+                    //-//
+                        if ( m_bMarkVictimDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            new maxvictim = m_iMarkVictimDamage_MaximumVictim[m_iAttacker][m_iSlot];
+                            new maxstack = m_iMarkVictimDamage_MaximumDamageStack[m_iAttacker][m_iSlot];
+                            g_pMarker[m_iVictim] = m_iAttacker;
+
+                            if ( m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] != INVALID_HANDLE )
+                            {
+                                ClearTimer( m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] );
+                                m_iIntegers[m_iAttacker][m_iMarkVictimDamage]--;
+                            }
+                            if ( m_hTimers[m_iAttacker][m_hMarkVictimDamage_TimerDuration] == INVALID_HANDLE && m_iIntegers[m_iAttacker][m_iMarkVictimDamage] < maxvictim )
+                            {
+                                m_iIntegers[m_iAttacker][m_iMarkVictimDamage]++;
+                                if ( m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] < maxstack ) m_iIntegers[m_iVictim][m_iMarkVictimDamageCount]++;
+
+                                new Handle:m_hData01 = CreateDataPack();
+                                m_hTimers[m_iVictim][m_hMarkVictimDamage_TimerDuration] = CreateDataTimer( m_flMarkVictimDamage_Duration[m_iAttacker][m_iSlot], m_tMarkVictimDamage_TimerDuration, m_hData01 );
+                                WritePackCell( m_hData01, m_iVictim );
+                                WritePackCell( m_hData01, m_iAttacker );
+                            }
+                            if ( m_iIntegers[m_iAttacker][m_iMarkVictimDamage] > maxvictim ) m_iIntegers[m_iAttacker][m_iMarkVictimDamage] = maxvictim;
+                            if ( m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] > maxstack ) m_iIntegers[m_iVictim][m_iMarkVictimDamageCount] = maxstack;
+                        }
+                    //-//
+                        if ( m_bHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            TF2_HealPlayer( m_iAttacker, GetClientHealth( m_iAttacker ) * m_flHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
+                    //-//
+                        if ( m_bEnemyHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            TF2_HealPlayer( m_iAttacker, GetClientHealth( m_iVictim ) * m_flEnemyHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flEnemyHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
+                    //-//
+                        if ( m_bMissingEnemyHealthLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( GetClientHealth( m_iVictim ) < TF2_GetClientMaxHealth( m_iVictim ) )
+                                TF2_HealPlayer( m_iAttacker, ( TF2_GetClientMaxHealth( m_iVictim ) - GetClientHealth( m_iVictim ) ) * m_flMissingEnemyHealthLifesteal_Multiplier[m_iAttacker][m_iSlot], m_flMissingEnemyHealthLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
+                        }
+                    //-//
+                        if ( m_bMCFRTD_ATTRIBUTE[m_iAttacker][m_iSlot] ) {
+                            if ( m_hTimers[m_iAttacker][m_hMCFRTD_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hMCFRTD_TimerDelay] );
+                        }
+                    //-//
+                        if ( m_bPsycho_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( m_flFloats[m_iAttacker][m_flPyschoCharge] < 100.0 && m_hTimers[m_iAttacker][m_hPsycho_TimerDuration] == INVALID_HANDLE )
+                            {
+                                new Float:m_flCharge = ( 2 * m_flDamage * ( 1.1 - FloatDiv( GetClientHealth( m_iAttacker )+0.0, TF2_GetClientMaxHealth( m_iAttacker )+0.0 ) ) ) * m_flPsycho_DamageResistance[m_iAttacker][m_iSlot];
+                                if ( m_flCharge < 1.0 ) m_flCharge = 1.0;
+                                m_flFloats[m_iAttacker][m_flPyschoCharge] += m_flCharge;
+                            }
+                        }
+                    //-//
+                        if ( m_bMetalOnHitDamage_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Engineer )
+                            TF2_SetClientMetal( m_iAttacker, RoundToFloor( TF2_GetClientMetal( m_iAttacker ) + ( m_flDamage * m_flMetalOnHitDamage_Multiplier[m_iAttacker][m_iSlot] ) ) );
+                    //-//
+                        if ( m_bStealDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] );
+                            if ( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] == INVALID_HANDLE )
+                            {
+                                m_iIntegers[m_iAttacker][m_iStealDamageAttacker] += m_iStealDamage_Steal[m_iAttacker][m_iSlot];
+                                m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageAttacker, m_iAttacker );
+                            }
+                            if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] );
+                            if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] == INVALID_HANDLE )
+                            {
+                                m_iIntegers[m_iVictim][m_iStealDamageVictim] += m_iStealDamage_Steal[m_iAttacker][m_iSlot];
+                                m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageVictim, m_iVictim );
+                            }
                         }
                     }
                 }
@@ -3350,16 +3350,15 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage, m_iType, m_iWeapon, const Float:m_flForce[3], const Float:m_flPosition[3] )
 {
     if ( m_flDamage >= 1.0
-        && IsValidClient( m_iAttacker ) )
-    {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
-        if ( IsValidClient( m_iVictim )
+        && IsValidClient( m_iAttacker )
+        && IsValidClient( m_iVictim )
         && !HasInvulnerabilityCond( m_iVictim )
-        && m_iWeapon != -1
-        && m_bHasAttribute[m_iAttacker][m_iSlot] )
+        && m_iWeapon != -1 )
+    {
+        if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
         {
-            if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
+            new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
+            if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
             {
                 if ( m_bStunOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                 {
@@ -3367,7 +3366,7 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
                     {
                         new Float:duration = m_flStunOnCrit_Duration[m_iAttacker][m_iSlot];
                         if ( m_iStunOnCrit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
-                        
+                            
                         TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
                         EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.25 );
                         EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
@@ -3380,17 +3379,15 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
 
                     if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
                     {
-
-                        new Handle:m_hData01 = CreateDataPack();
-                        CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
-                        WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
-                        WritePackCell( m_hData01, m_iVictim );
-                        WritePackCell( m_hData01, m_iAttacker );
-                        WritePackCell( m_hData01, type );
-                        m_iIntegers[m_iVictim][m_iHotSauceType] = type;
+                            new Handle:m_hData01 = CreateDataPack();
+                            CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
+                            WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
+                            WritePackCell( m_hData01, m_iVictim );
+                            WritePackCell( m_hData01, m_iAttacker );
+                            WritePackCell( m_hData01, type );
+                            m_iIntegers[m_iVictim][m_iHotSauceType] = type;
                     }
                 }
-
                 if ( m_iVictim != m_iAttacker )
                 {
                     if ( m_bDrainUberchargeOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
@@ -3435,11 +3432,11 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
 public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[], &bool:m_bResult )
 {
     if ( IsValidClient( m_iClient )
-        && IsPlayerAlive( m_iClient ) )
+        && IsPlayerAlive( m_iClient )
+        && m_iWeapon != -1 )
     {
         new m_iSlot = TF2_GetWeaponSlot( m_iClient, m_iWeapon );
-        if ( m_iWeapon != -1
-            && m_bHasAttribute[m_iClient][m_iSlot] )
+        if ( m_iSlot != -1 && m_bHasAttribute[m_iClient][m_iSlot] )
         {
             if ( m_bDamageSelf_ATTRIBUTE[m_iClient][m_iSlot] )
                 DealDamage( m_iClient, m_iDamageSelf_Amount[m_iClient][m_iSlot], m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE|HL_DMG_GENERIC );
@@ -3481,7 +3478,6 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
 {
     new m_iVictim = GetClientOfUserId( GetEventInt( m_hEvent, "userid" ) );
     new m_iKiller = GetClientOfUserId( GetEventInt( m_hEvent, "attacker" ) );
-    new m_iInflictor = GetClientOfUserId( GetEventInt( m_hEvent, "inflictor_entindex" ) );
     new bool:m_bFeignDeath = bool:( GetEventInt( m_hEvent, "death_flags" ) & TF_DEATHFLAG_DEADRINGER );
 
     if ( IsValidClient( m_iVictim ) )
@@ -3525,106 +3521,112 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         if ( IsValidClient( m_iKiller )
             && m_iKiller != m_iVictim )
         {
-            new m_iWeapon = g_iLastWeapon[m_iKiller];
-            new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon, m_iInflictor );
-            if ( m_bHasAttribute[m_iKiller][m_iSlot] )
+            if ( g_iLastWeapon[m_iKiller] != -1 ) 
             {
-                if ( m_bKillGib_ATTRIBUTE[m_iKiller][m_iSlot] )
+                new m_iWeapon = g_iLastWeapon[m_iKiller];
+                if ( m_iWeapon != -1 )
                 {
-                    new Float:fClientOrigin[3];
-                    GetClientAbsOrigin( m_iVictim, fClientOrigin );
-
-                    new ragdoll = CreateEntityByName( "tf_ragdoll" );
-                    if ( IsValidEdict( ragdoll ) )
+                    new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon );
+                    if ( m_iSlot != -1 && m_bHasAttribute[m_iKiller][m_iSlot] )
                     {
-                        SetEntPropVector( ragdoll, Prop_Send, "m_vecRagdollOrigin", fClientOrigin );
-                        SetEntProp( ragdoll, Prop_Send, "m_iPlayerIndex", m_iVictim );
-                        SetEntPropVector( ragdoll, Prop_Send, "m_vecForce", NULL_VECTOR );
-                        SetEntPropVector( ragdoll, Prop_Send, "m_vecRagdollVelocity", NULL_VECTOR );
-                        SetEntProp( ragdoll, Prop_Send, "m_bGib", 1 );
-
-                        DispatchSpawn( ragdoll );
-
-                        CreateTimer( 0.1, RemoveBody, m_iVictim );
-                        CreateTimer( 15.0, TF2_RemoveGibs, ragdoll );
-                    }
-                }
-            //-//
-                if ( m_bSpawnSkeletonOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
-                {
-                    new boss = m_iSpawnSkeletonOnKill_Boss[m_iKiller][m_iSlot];
-                    new Float:duration = m_flSpawnSkeletonOnKill_Duration[m_iKiller][m_iSlot];
-
-                    if ( ( boss == 0 ? 0.0 : m_flSpawnSkeletonOnKill_BossChance[m_iKiller][m_iSlot] ) >= GetRandomFloat( 0.0, 1.0 ) )
-                    {
-                        if ( boss == 1 ) SpawnThing( "headless_hatman", duration * 10.0, m_iVictim );
-                        if ( boss == 2 ) SpawnThing( "tf_zombie_spawner", 0.0, m_iVictim );
-                        if ( boss == 3 && TF2_GetPlayerClass( m_iVictim ) == TFClass_DemoMan ) SpawnThing( "eyeball_boss", duration * 10.0, m_iVictim );
-                    }
-                    else SpawnThing( "tf_zombie", duration, m_iVictim, GetClientTeam( m_iKiller ) );
-                }
-            //-//
-                if ( m_bAttackSpeedOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
-                {
-                    new max = m_iAttackSpeedOnKill_MaximumStack[m_iKiller][m_iSlot];
-
-                    m_iIntegers[m_iKiller][m_iAttackSpeed]++;
-                    if ( m_iIntegers[m_iKiller][m_iAttackSpeed] > max ) m_iIntegers[m_iKiller][m_iAttackSpeed] = max;
-                }
-            //-//
-                if ( m_bBANOnKillHit_ATTRIBUTE[m_iKiller][m_iSlot] )
-                {
-                    new kickban = m_iBANOnKillHit_KickOrBan[m_iKiller][m_iSlot];
-
-                    if ( m_iBANOnKillHit_HitOrKill[m_iKiller][m_iSlot] == 2 )
-                    {
-                        if ( kickban == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty custom power !" );
-                        else if ( kickban == 2 ) {
-                            if ( !IsFakeClient( m_iVictim ) ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iKiller][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty custom power !", "Custom" );
-                        }
-                    }
-                }
-            //-//
-                if ( m_bTeleportToVictimOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
-                {
-                    if ( TF2_GetPlayerClass( m_iKiller ) != TFClass_Engineer && TF2_GetPlayerClass( m_iKiller ) != TFClass_Medic && TF2_GetPlayerClass( m_iKiller ) != TFClass_Sniper && !m_bFeignDeath )
-                    {
-                        new Float:m_flPos[3];
-                        GetClientAbsOrigin( m_iVictim, m_flPos );
-
-                        TeleportEntity( m_iKiller, m_flPos, NULL_VECTOR, NULL_VECTOR );
-                    }
-                }
-            //-//
-                if ( m_bScareOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
-                {
-                    new Float:m_flPos1[3];
-                    GetClientAbsOrigin( m_iVictim, m_flPos1 );
-
-                    new Float:radius = m_flScareOnKill_Radius[m_iKiller][m_iSlot];
-                    new Float:duration = m_flScareOnKill_Duration[m_iKiller][m_iSlot];
-
-                    for ( new i = 1 ; i <= MaxClients ; i++ )
-                    {
-                        if ( i != m_iKiller && i != m_iVictim && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iKiller ) )
+                        if ( m_bKillGib_ATTRIBUTE[m_iKiller][m_iSlot] )
                         {
-                            if ( !HasInvulnerabilityCond( i ) )
+                            new Float:fClientOrigin[3];
+                            GetClientAbsOrigin( m_iVictim, fClientOrigin );
+
+                            new ragdoll = CreateEntityByName( "tf_ragdoll" );
+                            if ( IsValidEdict( ragdoll ) )
                             {
-                                new Float:m_flPos2[3];
-                                GetClientAbsOrigin( i, m_flPos2 );
+                                SetEntPropVector( ragdoll, Prop_Send, "m_vecRagdollOrigin", fClientOrigin );
+                                SetEntProp( ragdoll, Prop_Send, "m_iPlayerIndex", m_iVictim );
+                                SetEntPropVector( ragdoll, Prop_Send, "m_vecForce", NULL_VECTOR );
+                                SetEntPropVector( ragdoll, Prop_Send, "m_vecRagdollVelocity", NULL_VECTOR );
+                                SetEntProp( ragdoll, Prop_Send, "m_bGib", 1 );
 
-                                new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                                if ( distance <= radius )
+                                DispatchSpawn( ragdoll );
+
+                                CreateTimer( 0.1, RemoveBody, m_iVictim );
+                                CreateTimer( 15.0, TF2_RemoveGibs, ragdoll );
+                            }
+                        }
+                    //-//
+                        if ( m_bSpawnSkeletonOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                        {
+                            new boss = m_iSpawnSkeletonOnKill_Boss[m_iKiller][m_iSlot];
+                            new Float:duration = m_flSpawnSkeletonOnKill_Duration[m_iKiller][m_iSlot];
+
+                            if ( ( boss == 0 ? 0.0 : m_flSpawnSkeletonOnKill_BossChance[m_iKiller][m_iSlot] ) >= GetRandomFloat( 0.0, 1.0 ) )
+                            {
+                                if ( boss == 1 ) SpawnThing( "headless_hatman", duration * 10.0, m_iVictim );
+                                if ( boss == 2 ) SpawnThing( "tf_zombie_spawner", 0.0, m_iVictim );
+                                if ( boss == 3 && TF2_GetPlayerClass( m_iVictim ) == TFClass_DemoMan ) SpawnThing( "eyeball_boss", duration * 10.0, m_iVictim );
+                            }
+                            else SpawnThing( "tf_zombie", duration, m_iVictim, GetClientTeam( m_iKiller ) );
+                        }
+                    //-//
+                        if ( m_bAttackSpeedOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                        {
+                            new max = m_iAttackSpeedOnKill_MaximumStack[m_iKiller][m_iSlot];
+
+                            m_iIntegers[m_iKiller][m_iAttackSpeed]++;
+                            if ( m_iIntegers[m_iKiller][m_iAttackSpeed] > max ) m_iIntegers[m_iKiller][m_iAttackSpeed] = max;
+                        }
+                    //-//
+                        if ( m_bBANOnKillHit_ATTRIBUTE[m_iKiller][m_iSlot] )
+                        {
+                            new kickban = m_iBANOnKillHit_KickOrBan[m_iKiller][m_iSlot];
+
+                            if ( m_iBANOnKillHit_HitOrKill[m_iKiller][m_iSlot] == 2 )
+                            {
+                                if ( kickban == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty custom power !" );
+                                else if ( kickban == 2 ) {
+                                    if ( !IsFakeClient( m_iVictim ) ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iKiller][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty custom power !", "Custom" );
+                                }
+                            }
+                        }
+                    //-//
+                        if ( m_bTeleportToVictimOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                        {
+                            if ( TF2_GetPlayerClass( m_iKiller ) != TFClass_Engineer && TF2_GetPlayerClass( m_iKiller ) != TFClass_Medic && TF2_GetPlayerClass( m_iKiller ) != TFClass_Sniper && !m_bFeignDeath )
+                            {
+                                new Float:m_flPos[3];
+                                GetClientAbsOrigin( m_iVictim, m_flPos );
+
+                                TeleportEntity( m_iKiller, m_flPos, NULL_VECTOR, NULL_VECTOR );
+                            }
+                        }
+                    //-//
+                        if ( m_bScareOnKill_ATTRIBUTE[m_iKiller][m_iSlot] )
+                        {
+                            new Float:m_flPos1[3];
+                            GetClientAbsOrigin( m_iVictim, m_flPos1 );
+
+                            new Float:radius = m_flScareOnKill_Radius[m_iKiller][m_iSlot];
+                            new Float:duration = m_flScareOnKill_Duration[m_iKiller][m_iSlot];
+
+                            for ( new i = 1 ; i <= MaxClients ; i++ )
+                            {
+                                if ( i != m_iKiller && i != m_iVictim && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iKiller ) )
                                 {
-                                    if ( m_hTimers[i][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                                    if ( !HasInvulnerabilityCond( i ) )
                                     {
-                                        if ( m_iScareOnKill_StunLock[m_iKiller][m_iSlot] == 1 ) m_hTimers[i][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, i );
-                                            
-                                        new Float:stun_reduction = 1.0;
-                                        if ( distance >= 73.0 )
-                                            stun_reduction = ( duration * ( radius - ( ( distance - 73.0 ) * 0.66 ) ) / radius ) / duration;
+                                        new Float:m_flPos2[3];
+                                        GetClientAbsOrigin( i, m_flPos2 );
 
-                                        TF2_StunPlayer( i, duration * stun_reduction, 1.0, TF_STUNFLAGS_GHOSTSCARE, m_iKiller );
+                                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
+                                        if ( distance <= radius )
+                                        {
+                                            if ( m_hTimers[i][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                                            {
+                                                if ( m_iScareOnKill_StunLock[m_iKiller][m_iSlot] == 1 ) m_hTimers[i][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, i );
+                                                    
+                                                new Float:stun_reduction = 1.0;
+                                                if ( distance >= 73.0 )
+                                                    stun_reduction = ( duration * ( radius - ( ( distance - 73.0 ) * 0.66 ) ) / radius ) / duration;
+
+                                                TF2_StunPlayer( i, duration * stun_reduction, 1.0, TF_STUNFLAGS_GHOSTSCARE, m_iKiller );
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -3952,10 +3954,9 @@ public Action:m_tMCFRTD_Timer( Handle:timer, Handle:m_hData03 )
     {
         if ( m_iWeapon != -1 && IsValidEdict( m_iWeapon ) && IsValidClient( m_iClient ) )
         {
-            new m_iSlot = TF2_GetWeaponSlot( m_iClient, m_iWeapon );
             m_bBools[m_iClient][m_bLastWasMiss] = true;
 
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", m_flMCFRTD_OldAttackSpeed[m_iClient][m_iSlot] );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus",GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_OldAttackSpeed ) );
             new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
