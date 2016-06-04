@@ -343,7 +343,7 @@ stock TF2_SetClientSlot(client, slot)
     if (IsValidClient(client) && IsPlayerAlive(client))
     {
         new weapon = GetPlayerWeaponSlot(client, slot);
-        if ( weapon > 0 && IsValidEntity( weapon ) && IsValidEdict( weapon ) )
+        if ( weapon != -1 && IsValidEntity( weapon ) && IsValidEdict( weapon ) )
         {
             SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
             
@@ -358,9 +358,11 @@ stock TF2_GetClientActiveSlot(client) {
 }
 stock GetWeaponSlot(client, weapon)
 {
-    if (IsValidClient(client)) {
+    if (IsValidClient(client) && IsValidEntity(weapon) && IsValidEdict(weapon))
+    {
         for (new i = 0; i <= 4; i++) {
-            if (weapon == GetPlayerWeaponSlot(client, i)) return i;
+            new j = GetPlayerWeaponSlot(client, i);
+            if ( j != -1 && IsValidEntity(j) && IsValidEdict(j) && weapon == j ) return i;
         }
     }
     return -1;
@@ -369,22 +371,20 @@ stock TF2_GetClientActiveWeapon(client)
 {
     if (IsValidClient(client)) {
         new weapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
-        if (IsValidEntity(weapon)) return weapon;
+        if (weapon != -1 && IsValidEntity(weapon) && IsValidEdict(weapon)) return weapon;
     }
     return INVALID_ENT_REFERENCE;
 }
-stock TF2_GetWeaponSlot(client, weapon = 0, inflictor = 0)
+stock TF2_GetWeaponSlot(client, weapon = -1) // inflictor ? NO.
 {
-    new slot = TF2_GetClientSlot(client);
-    if(weapon > 0 && IsValidEdict(weapon))
+    new slot = -1;
+    if ( IsValidClient( client ) )
     {
-        slot = GetWeaponSlot(client, weapon);
-    } else {
-        if(inflictor > 0 && !IsValidClient(inflictor) && IsValidEdict(inflictor))
-        {
-            slot = GetWeaponSlot(client, inflictor);
-        }
+        slot = TF2_GetClientActiveSlot( client );
+        if ( weapon != -1 && IsValidEdict( weapon ) && IsValidEdict( weapon ) )
+            slot = GetWeaponSlot( client, weapon );
     }
+
     return slot;
 }
 
