@@ -1446,8 +1446,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
         if ( IsValidClient( m_iAttacker )
             && m_iAttacker != m_iVictim )
         {
-            new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
             if ( HasAttribute( m_iVictim, _, m_bEvasion_ATTRIBUTE ) || HasAttribute( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE ) || m_bBools[m_iAttacker][m_bRadiance_SubAbilityActive] )
             {
                 if ( !( m_iType & DOTA_DMG_BLADEMAIL )
@@ -1472,7 +1470,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     evasion = 1 - evasion;
                     if ( evasion >= GetRandomFloat( 0.0, 1.0 ) )
                     {
-                        if ( m_iWeapon == -1 || !( m_bTrueStrike_ATTRIBUTE[m_iAttacker][m_iSlot] ) ) {
+                        if ( m_iWeapon == -1 || !( m_bTrueStrike_ATTRIBUTE[m_iAttacker][TF2_GetWeaponSlot( m_iAttacker, m_iWeapon )] ) ) {
                             m_flDamage = 0.0;
                             ShowText( m_iVictim, "miss_text" );
                         }
@@ -1487,8 +1485,9 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
             {
                 if ( m_iWeapon != -1 )
                 {
+                    new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
                     g_iLastWeapon[m_iAttacker] = m_iWeapon;
-                    if ( m_bHasAttribute[m_iAttacker][m_iSlot] && m_flDamage >= 1.0 )
+                    if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                     {
 
                         /* Apply Enchant Totem : Increases damage before the others modifiers.
@@ -1742,11 +1741,11 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
     if ( m_flDamage >= 1.0
         && IsValidClient( m_iVictim )
         && IsValidClient( m_iAttacker )
-        && m_iAttacker != m_iVictim )
+        && m_iAttacker != m_iVictim
+        && m_iWeapon != -1 )
     {
-        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon, m_iInflictor );
-
-        if ( m_iWeapon != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
+        new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
+        if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
         {
             if ( m_bLifesteal_ATTRIBUTE[m_iAttacker][m_iSlot] )
                 TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLifesteal_Percentage[m_iAttacker][m_iSlot], m_flLifesteal_OverHealBonusCap[m_iAttacker][m_iSlot], true );
@@ -1893,7 +1892,6 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
 {
     new m_iVictim = GetClientOfUserId( GetEventInt( m_hEvent, "userid" ) );
     new m_iKiller = GetClientOfUserId( GetEventInt( m_hEvent, "attacker" ) );
-    new m_iInflictor = GetClientOfUserId( GetEventInt( m_hEvent, "inflictor_entindex" ) );
     new bool:m_bFeignDeath = bool:( GetEventInt( m_hEvent, "death_flags" ) & TF_DEATHFLAG_DEADRINGER );
 
     if ( IsValidClient( m_iVictim ) )
@@ -1989,14 +1987,18 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         {
             if ( IsValidClient( m_iKiller ) )
             {
-                new m_iWeapon = g_iLastWeapon[m_iKiller];
-                new m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon, m_iInflictor );
-
+                new m_iWeapon = -1;
+                new m_iSlot = -1;
+                if ( g_iLastWeapon[m_iKiller] != -1 ) {
+                    m_iWeapon = g_iLastWeapon[m_iKiller];
+                    if ( m_iWeapon != -1 ) m_iSlot = TF2_GetWeaponSlot( m_iKiller, m_iWeapon );
+                }
                 if ( HasAttribute( m_iKiller, _, m_bNecromastery_ATTRIBUTE ) )
                 {
                     new act = GetAttributeValueI( m_iKiller, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_PoA );
                     new max_souls = GetAttributeValueI( m_iKiller, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_MaximumStack );
-                    if ( act == 0 || m_iWeapon != -1 && m_bHasAttribute[ m_iKiller][m_iSlot] && m_bNecromastery_ATTRIBUTE[ m_iKiller][m_iSlot] && act == 1 )
+                    if ( act == 0
+                      || m_iWeapon != -1 && m_iSlot != -1 && m_bHasAttribute[m_iKiller][m_iSlot] && m_bNecromastery_ATTRIBUTE[m_iKiller][m_iSlot] && act == 1 )
                     {
                         m_iIntegers[m_iKiller][m_iNecromastery_Souls]++;
                         if ( m_iIntegers[m_iKiller][m_iNecromastery_Souls] > max_souls ) m_iIntegers[m_iKiller][m_iNecromastery_Souls] = max_souls;
