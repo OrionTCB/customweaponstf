@@ -492,8 +492,8 @@ public OnClientPreThink( m_iClient )
 }
 public OnPreThink( m_iClient )
 {
-    if ( !IsPlayerAlive( m_iClient ) ) return;
     if ( !IsValidClient( m_iClient ) ) return;
+    if ( !IsPlayerAlive( m_iClient ) ) return;
     
     new m_iButtonsLast = g_iLastButtons[m_iClient];
     new m_iButtons = GetClientButtons( m_iClient );
@@ -738,6 +738,7 @@ ATTRIBUTE_FLYWHILESHOOTING( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( GetEntityFlags( m_iClient ) & FL_ONGROUND ) return m_iButtons;
         if ( GetEntityFlags( m_iClient ) & FL_INWATER ) return m_iButtons;
         if ( GetEntProp( m_iWeapon, Prop_Send, "m_bLowered" ) ) return m_iButtons;
+        if ( IsClientLookingAWall( m_iClient ) ) return m_iButtons;
 
         decl String:weaponStr[64];
         GetClientWeapon( m_iClient, weaponStr, sizeof( weaponStr ) );
@@ -1825,7 +1826,8 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
     {
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim )
-            && m_iAttacker != m_iVictim )
+            && m_iAttacker != m_iVictim
+            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim ) )
         {
             if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 && GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance, true ) == 0.0 ) {
                 if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
@@ -2357,6 +2359,7 @@ public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage,
         if ( IsValidClient( m_iVictim )
             && !HasInvulnerabilityCond( m_iVictim )
             && m_iAttacker != m_iVictim 
+            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim )
             && m_iWeapon != -1 )
         {
             if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
