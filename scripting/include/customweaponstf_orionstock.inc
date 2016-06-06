@@ -284,7 +284,7 @@ stock TF2_SetClientMetal(client, NewMetal)
 }
 
 // ====[ AMMUNITIONS ]=================================================
-/*stock SetAmmo(client, slot, newAmmo)
+stock SetAmmo(client, slot, newAmmo)
 {
     if (IsValidClient(client))
     {
@@ -295,16 +295,22 @@ stock TF2_SetClientMetal(client, NewMetal)
             if (type > 0 || type < 31) SetEntProp(client, Prop_Send, "m_iAmmo", newAmmo, _, type);
         }
     }
-}*/
-stock GetAmmo(client, slot)
+}
+stock GetAmmo(client, slot, mode = 0)
 {
     if (IsValidClient(client))
     {
         new weapon = GetPlayerWeaponSlot(client, slot);
         if (IsValidEntity(weapon))
         {
-            new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-            if (type > 0 || type < 31) return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
+            if (mode == 0) {
+                new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+                if (type > 0 || type < 31) return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
+            } else {
+                new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
+                new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+                return GetEntData(client, iAmmoTable+iOffset);
+            }
         }
     }
     return 0;
@@ -375,7 +381,7 @@ stock TF2_GetClientActiveWeapon(client)
     }
     return INVALID_ENT_REFERENCE;
 }
-stock TF2_GetWeaponSlot(client, weapon = -1) // inflictor ? NO.
+stock TF2_GetWeaponSlot(client, weapon = -1)
 {
     new slot = -1;
     if ( IsValidClient( client ) )
@@ -522,6 +528,35 @@ stock Float:GetVectorAnglesTwoPoints( const Float:startPos[3], const Float:endPo
     tmpVec[2] = endPos[2] - startPos[2];
     GetVectorAngles( tmpVec, angles );
 }
+stock bool:IsClientLookingAWall( client, Float:distance = 40.0 ) {
+
+    decl Float:posEye[3], Float:posEyeAngles[3];
+    
+    GetClientEyePosition(client, posEye);
+    GetClientEyeAngles(client, posEyeAngles);
+    posEyeAngles[0] = 0.0;
+
+    new Handle:trace = TR_TraceRayFilterEx(posEye, posEyeAngles, CONTENTS_SOLID, RayType_Infinite, TraceFilterEntity);
+    
+    if (TR_DidHit(trace)) {
+        
+        if (TR_GetEntityIndex(trace) > 0) {
+            CloseHandle(trace);
+            return false;
+        }
+        
+        decl Float:posEnd[3];
+        TR_GetEndPosition(posEnd, trace);
+        
+        if (GetVectorDistance(posEye, posEnd, true) <= (distance * distance)) {
+            CloseHandle(trace);
+            return true;
+        }
+    }
+    
+    CloseHandle(trace);
+    return false;
+}
 
 // ====[ SOUND ]=======================================================
 stock EmitSoundFromOrigin(const String:sound[],const Float:orig[3])
@@ -559,6 +594,10 @@ public bool:TraceFilterIgnoreSelf( entity, contentsMask, any:hiok )
 {
     if ( entity == hiok || entity > 0 && entity <= MaxClients ) return false;
     return true;
+}
+public bool:TraceFilterEntity( entity, contentsMask, any:hiok )
+{
+    return entity == 0;
 }
 
 // ====[ SPAWN ]=======================================================
