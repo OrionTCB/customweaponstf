@@ -40,6 +40,8 @@ enum
     Handle:m_hStealDamageA_TimerDuration,
     Handle:m_hStealDamageV_TimerDuration,
     Handle:m_hStunlock_TimerDelay,
+    Handle:m_hHeatFireRate_TimerDelay,
+    Handle:m_hHeatDamage_TimerDelay,
     Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
@@ -48,8 +50,6 @@ enum
     m_bBackstab_SuicideBlocker = 0,
     m_bBuffDeployed,
     m_bInfiniteAfterburnRessuply,
-    m_bIsHeat,
-    m_bIsHeatToo,
     m_bLastWasMiss,
     m_bBool
 };
@@ -656,9 +656,9 @@ public Event_PostInventoryApplication( Handle:m_hEvent, const String:m_strName[]
             ClearTimer( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] );
             g_pBurner[m_iClient] = -1;
         }
+        if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+        if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] );
 
-        m_bBools[m_iClient][m_bIsHeat]              = false;
-        m_bBools[m_iClient][m_bIsHeatToo]           = false;
         m_bBools[m_iClient][m_bLastWasMiss]         = false;
         m_iIntegers[m_iClient][m_iHeat]             = 0;
         m_iIntegers[m_iClient][m_iHeatToo]          = 0;
@@ -702,8 +702,8 @@ public OnClientPreThink( m_iClient )
 }
 public OnPreThink( m_iClient )
 {
-    if ( !IsPlayerAlive( m_iClient ) ) return;
     if ( !IsValidClient( m_iClient ) ) return;
+    if ( !IsPlayerAlive( m_iClient ) ) return;
     
     new m_iButtonsLast = g_iLastButtons[m_iClient];
     new m_iButtons = GetClientButtons( m_iClient );
@@ -763,30 +763,32 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
         new ammo = GetAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
-        if ( ammo <= 0 ) m_iIntegers[m_iClient][m_iHeat] = 0;
+        if ( ammo <= 0 )
+            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+
+        if ( GetEntProp( m_iWeapon, Prop_Data, "m_bInReload") )
+            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
 
         decl String:m_sWeapon[20];
         GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
         if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
         {
-            if ( !( m_bBools[m_iClient][m_bIsHeat] ) )
+            if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE )
             {
                 if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
                 new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
                 new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
-                new Handle:m_hData01 = CreateDataPack();
-                CreateDataTimer( delay, m_tHeatAttackSpeed_TimerDelay, m_hData01 );
-                WritePackCell( m_hData01, m_iWeapon );
-                WritePackCell( m_hData01, m_iClient );
-                WritePackFloat( m_hData01, m_flAttackSpeed );
-                m_bBools[m_iClient][m_bIsHeat] = true;
+                m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] = CreateDataPack();
+                CreateDataTimer( delay, m_tHeatAttackSpeed_TimerDelay, m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+                WritePackCell( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_iWeapon );
+                WritePackCell( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_iClient );
+                WritePackFloat( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_flAttackSpeed );
             }
         }
         else {
             TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            m_iIntegers[m_iClient][m_iHeat] = 0;
-            m_bBools[m_iClient][m_bIsHeat] = false;
+            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
         }
 
         if ( m_iIntegers[m_iClient][m_iHeat] == 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
@@ -819,7 +821,7 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 }
             }
         }
-        if ( !( m_bBools[m_iClient][m_bIsHeat] ) ) m_iIntegers[m_iClient][m_iHeat] = 0;
+        if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE ) m_iIntegers[m_iClient][m_iHeat] = 0;
     }
 
     return m_iButtons;
@@ -834,20 +836,19 @@ ATTRIBUTE_HEATDMGTAKEN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new ammo = GetAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
         if ( ammo <= 0 ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
 
+        if ( GetEntProp( TF2_GetClientActiveWeapon( m_iClient ), Prop_Data, "m_bInReload") )
+            ClearTimer( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] );
+
         decl String:m_sWeapon[20];
         GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
         if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
         {
-            if ( !( m_bBools[m_iClient][m_bIsHeatToo] ) )
-            {
-                m_bBools[m_iClient][m_bIsHeatToo] = true;
-                CreateTimer( delay, m_tHeatDMGTaken_TimerDelay, m_iClient );
-            }
-        } else {
-            m_iIntegers[m_iClient][m_iHeatToo]  = 0;
-            m_bBools[m_iClient][m_bIsHeatToo]   = false;
-        }
-        if ( !( m_bBools[m_iClient][m_bIsHeatToo] ) ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
+            if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] == INVALID_HANDLE )
+                m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] = CreateTimer( delay, m_tHeatDMGTaken_TimerDelay, m_iClient );
+        } 
+        else m_iIntegers[m_iClient][m_iHeatToo] = 0;
+
+        if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] == INVALID_HANDLE ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
     }
 
     return m_iButtons;
@@ -2711,7 +2712,8 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
             {
                 if ( IsValidClient( m_iVictim )
                     && !HasInvulnerabilityCond( m_iVictim )
-                    && m_iAttacker != m_iVictim )
+                    && m_iAttacker != m_iVictim
+                    && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim ) )
                 {
                     if ( m_iWeapon != -1 )
                     {
@@ -3908,7 +3910,7 @@ public Action:m_tHeatAttackSpeed_TimerDelay( Handle:timer, any:m_hData01 )
             }
         }
     }
-    m_bBools[m_iClient][m_bIsHeat] = false;
+    m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] = INVALID_HANDLE;
 }
 public Action:m_tHeatDMGTaken_TimerDelay( Handle:timer, any:m_iClient )
 {
@@ -3921,8 +3923,8 @@ public Action:m_tHeatDMGTaken_TimerDelay( Handle:timer, any:m_iClient )
             }
             else m_iIntegers[m_iClient][m_iHeatToo]++;
         }
-        m_bBools[m_iClient][m_bIsHeatToo] = false;
     }
+    m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] = INVALID_HANDLE;
 }
 public Action:m_tMarkVictimDamage_TimerDuration( Handle:timer, any:m_hData01 )
 {
