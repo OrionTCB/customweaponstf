@@ -460,8 +460,8 @@ public OnClientPreThink( m_iClient )
 }
 public OnPreThink( m_iClient )
 {
-    if ( !IsPlayerAlive( m_iClient ) ) return;
     if ( !IsValidClient( m_iClient ) ) return;
+    if ( !IsPlayerAlive( m_iClient ) ) return;
     
     new m_iButtonsLast = g_iLastButtons[m_iClient];
     new m_iButtons = GetClientButtons( m_iClient );
@@ -735,7 +735,7 @@ ATTRIBUTE_DUEL( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) )
     {
-        if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
+        if ( HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
         {
             if ( m_hTimers[m_iClient][m_hDuel_TimerCooldown] == INVALID_HANDLE
                 && m_hTimers[m_iClient][m_hDuel_TimerDuration] == INVALID_HANDLE
@@ -1444,7 +1444,8 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
         && !HasInvulnerabilityCond( m_iVictim ) )
     {
         if ( IsValidClient( m_iAttacker )
-            && m_iAttacker != m_iVictim )
+            && m_iAttacker != m_iVictim
+            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim ) )
         {
             if ( HasAttribute( m_iVictim, _, m_bEvasion_ATTRIBUTE ) || HasAttribute( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE ) || m_bBools[m_iAttacker][m_bRadiance_SubAbilityActive] )
             {
@@ -1708,6 +1709,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 
         if ( IsValidClient( m_iAttacker )
             && m_iAttacker != m_iVictim
+            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim )
             && m_flDamage >= 1.0 )
         {
 
@@ -1742,6 +1744,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
         && IsValidClient( m_iVictim )
         && IsValidClient( m_iAttacker )
         && m_iAttacker != m_iVictim
+        && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim )
         && m_iWeapon != -1 )
     {
         new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
@@ -1821,10 +1824,10 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 {
                     m_hTimers[m_iAttacker][m_hDuel_TimerCooldown] = CreateTimer( m_flDuel_Cooldown[m_iAttacker][m_iSlot], m_tDuel_Cooldown, m_iAttacker );
 
-                    if ( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] );
-                    if ( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] == INVALID_HANDLE ) {
+                    if ( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] != INVALID_HANDLE )
+                        ClearTimer( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] );
+                    if ( m_hTimers[m_iAttacker][m_hDuel_TimerDuration] == INVALID_HANDLE )
                         m_hTimers[m_iAttacker][m_hDuel_TimerDuration] = CreateTimer( m_flDuel_Duration[m_iAttacker][m_iSlot], m_tDuel_Duration, m_iAttacker );
-                    }
 
                     g_pDuelist[m_iAttacker] = m_iVictim;
                     m_bBools[m_iAttacker][m_bDuel_ReadyForIt] = false;
@@ -1915,6 +1918,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                 {
                     m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
                     g_pDuelist[m_iVictim] = -1;
+                    ClearTimer( m_hTimers[m_iVictim][m_hDuel_TimerDuration] );
                     // Here, g_pDuelist[m_iVictim] IS THE KILLER.
                     // And, m_iVictim IS THE VICTIM.
                 }
