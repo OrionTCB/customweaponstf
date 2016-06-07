@@ -31,7 +31,7 @@
 #define SOUND_LVLUP2                  "weapons/vaccinator_charge_tier_02.wav"
 #define SOUND_LVLUP3                  "weapons/vaccinator_charge_tier_03.wav"
 #define SOUND_LVLUP4                  "weapons/vaccinator_charge_tier_04.wav"
-#define MDL_BOMBLET                   "models/weapons/w_models/w_grenade_pipebomb.mdl"
+#define MDL_BOMBLET                   "models/workshop/weapons/c_models/c_quadball/w_quadball_grenade.mdl"
 #define PARTICLE_ZEUS                 "wrenchmotron_teleport_beam"
 #define PARTICLE_DESOLATOR            "critical_rocket_redsparks"
 
@@ -153,13 +153,13 @@ public OnMapStart()
     PrecacheSound(SOUND_LVLUP2, true);
     PrecacheSound(SOUND_LVLUP3, true);
     PrecacheSound(SOUND_LVLUP4, true);
+    PrecacheModel(MDL_BOMBLET);
+    PrecacheParticle(PARTICLE_ZEUS);
+    PrecacheParticle(PARTICLE_DESOLATOR);
     new loop;
     for (loop = 0; loop < sizeof(g_strSoundExplosionBox); loop++) PrecacheSound(g_strSoundExplosionBox[loop], true);
     for (loop = 0; loop < sizeof(s_strCritTake); loop++) PrecacheSound(s_strCritTake[loop], true);
     for (loop = 0; loop < sizeof(s_strMiniCritDeal); loop++) PrecacheSound(s_strMiniCritDeal[loop], true);
-    PrecacheModel(MDL_BOMBLET);
-    PrecacheParticle(PARTICLE_ZEUS);
-    PrecacheParticle(PARTICLE_DESOLATOR);
 }
 
 // ====[ STOCKS ]======================================================
@@ -284,7 +284,7 @@ stock TF2_SetClientMetal(client, NewMetal)
 }
 
 // ====[ AMMUNITIONS ]=================================================
-stock SetAmmo(client, slot, newAmmo)
+stock SetCarriedAmmo(client, slot, newAmmo)
 {
     if (IsValidClient(client))
     {
@@ -296,26 +296,40 @@ stock SetAmmo(client, slot, newAmmo)
         }
     }
 }
-stock GetAmmo(client, slot, mode = 0)
+stock GetCarriedAmmo(client, slot)
 {
     if (IsValidClient(client))
     {
         new weapon = GetPlayerWeaponSlot(client, slot);
         if (IsValidEntity(weapon))
         {
-            if (mode == 0) {
-                new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-                if (type > 0 || type < 31) return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
-            } else {
-                new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
-                new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
-                return GetEntData(client, iAmmoTable+iOffset);
-            }
+            new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+            if (type > 0 || type < 31)
+                return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
         }
     }
     return 0;
 }
-stock SetWeaponAmmo(client, slot, ammo = -1, ammo2 = -1)
+stock SetClipAmmo(client, slot, ammo)
+{
+    if (IsValidClient(client))
+    {
+        new weapon = GetPlayerWeaponSlot(client, slot);
+        if (IsValidEntity(weapon))
+            SetEntProp(weapon, Prop_Send, "m_iClip1", ammo);
+    }
+}
+stock GetClipAmmo(client, slot)
+{
+    if (IsValidClient(client))
+    {
+        new weapon = GetPlayerWeaponSlot(client, slot);
+        if (IsValidEntity(weapon))
+            return GetEntProp(weapon, Prop_Data, "m_iClip1");
+    }
+    return 0;
+}
+stock SetLoadedAmmo(client, slot, ammo = -1, ammo2 = -1)
 {
     if (IsValidClient(client))
     {
@@ -328,7 +342,7 @@ stock SetWeaponAmmo(client, slot, ammo = -1, ammo2 = -1)
         }
     }
 }
-stock GetWeaponAmmo(client, slot)
+stock GetLoadedAmmo(client, slot)
 {
     if (IsValidClient(client))
     {
@@ -501,19 +515,19 @@ stock AnglesToVelocity(Float:fAngle[3], Float:fVelocity[3], Float:fSpeed = 1.0)
     
     ScaleVector(fVelocity, fSpeed);
 }
-stock bool:IsEntityStuck( m_iEntity )
+stock bool:IsEntityStuck( entity )
 {
     new Float:fPos[3], Float:fMins[3], Float:fMaxs[3];
-    GetEntPropVector( m_iEntity, Prop_Send, "m_vecOrigin", fPos );
-    GetEntPropVector( m_iEntity, Prop_Send, "m_vecMins", fMins );
-    GetEntPropVector( m_iEntity, Prop_Send, "m_vecMaxs", fMaxs );
+    GetEntPropVector( entity, Prop_Send, "m_vecOrigin", fPos );
+    GetEntPropVector( entity, Prop_Send, "m_vecMins", fMins );
+    GetEntPropVector( entity, Prop_Send, "m_vecMaxs", fMaxs );
     
-    TR_TraceHullFilter( fPos, fPos, fMins, fMaxs, MASK_SOLID, TraceFilterIgnoreSelf, m_iEntity );
+    TR_TraceHullFilter( fPos, fPos, fMins, fMaxs, MASK_SOLID, TraceFilterIgnoreSelf, entity );
     return TR_DidHit();
 }
-stock bool:WillEntityGetStuck( m_iEntity, Float:fPos[3] = {0.0,0.0,0.0}, Float:fMins[3] = {0.0,0.0,0.0}, Float:fMaxs[3] = {0.0,0.0,0.0} )
+stock bool:WillEntityGetStuck( entity, Float:fPos[3] = {0.0,0.0,0.0}, Float:fMins[3] = {0.0,0.0,0.0}, Float:fMaxs[3] = {0.0,0.0,0.0} )
 {
-    TR_TraceHullFilter( fPos, fPos, fMins, fMaxs, MASK_SOLID, TraceFilterIgnoreSelf, m_iEntity );
+    TR_TraceHullFilter( fPos, fPos, fMins, fMaxs, MASK_SOLID, TraceFilterIgnoreSelf, entity );
     return TR_DidHit();
 }
 stock Float:GetVectorDistanceMeter(const Float:vec1[3], const Float:vec2[3], bool:squared=false) // Thx RavensBro.
@@ -686,29 +700,28 @@ stock SetHomingProjectile( client, const String:classname[], Float:radius, mode,
         {
             new Target = GetClosestTarget( entity, owner, mode );
             if ( !Target ) continue;
-            
-            new Float:EntityPos[3];
+
+            new Float:EntityPos[3], Float:TargetPos[3];
             GetEntPropVector( entity, Prop_Data, "m_vecAbsOrigin", EntityPos );
-            new Float:TargetPos[3];
             GetClientAbsOrigin( Target, TargetPos );
             new Float:distance = GetVectorDistance( EntityPos, TargetPos );
             
-            if( distance < radius )
+            if( distance <= radius )
             {
-                new Float:ProjLocation[3], Float:ProjVector[3], Float:BaseSpeed, Float:NewSpeed, Float:ProjAngle[3], Float:TargetLocation[3], Float:AimVector[3], Float:InitialSpeed[3];
+                new Float:ProjLocation[3], Float:ProjVector[3], Float:BaseSpeed, Float:NewSpeed, Float:ProjAngle[3], Float:AimVector[3], Float:InitialSpeed[3];
                 
                 GetEntPropVector( entity, Prop_Send, "m_vInitialVelocity", InitialSpeed);
                 if ( GetVectorLength( InitialSpeed ) < 10.0 ) GetEntPropVector( entity, Prop_Data, "m_vecAbsVelocity", InitialSpeed );
                 BaseSpeed = GetVectorLength( InitialSpeed ) * 0.5;
                 
                 GetEntPropVector( entity, Prop_Data, "m_vecAbsOrigin", ProjLocation );
-                GetClientAbsOrigin( Target, TargetLocation );
-                TargetLocation[2] += (40.0 + Pow(distance, 2.0) / 10000.0);
+                GetClientAbsOrigin( Target, TargetPos );
+                TargetPos[2] += (40.0 + Pow(distance, 2.0) / 10000.0);
                 
-                MakeVectorFromPoints( ProjLocation, TargetLocation, AimVector );
+                MakeVectorFromPoints( ProjLocation, TargetPos, AimVector );
                 
                 if ( type == 0 ) GetEntPropVector( entity, Prop_Data, "m_vecAbsVelocity", ProjVector );
-                else if ( type == 1 ) SubtractVectors( TargetLocation, ProjLocation, ProjVector );
+                else if ( type == 1 ) SubtractVectors( TargetPos, ProjLocation, ProjVector );
                 AddVectors( ProjVector, AimVector, ProjVector );
                 NormalizeVector( ProjVector, ProjVector );
                 
@@ -764,6 +777,12 @@ stock bool:IsValidForHoming(client, owner, entity, mode)
 {
     if (IsValidClient(owner) && IsValidClient(client) && IsValidEntity(entity))
     {
+        new Float:OwnerPos[3], Float:TargetPos[3];
+        GetClientAbsOrigin( owner, OwnerPos );
+        GetClientAbsOrigin( client, TargetPos );
+        new Float:distance_d = GetVectorDistance( OwnerPos, TargetPos );
+        if ( distance_d <= 146.0 ) return false;
+    
         new team = GetEntProp(entity, Prop_Send, "m_iTeamNum");
         if (IsPlayerAlive(client) && client != owner && GetClientTeam(owner) != GetClientTeam(client))
         {
@@ -847,13 +866,13 @@ stock any:AttachParticle(ent, String:particleName[], Float:duration = 0.0, Float
     
     return particle;
 }
-stock AddParticle(client, m_iEntity, String:m_strParticle[], m_iCount)
+stock AddParticle(client, entity, String:m_strParticle[], m_iCount)
 {
     if (IsValidClient(client))
     {
         for (new i = 0; i < m_iCount; i++)
         {
-            AttachParticle(m_iEntity, m_strParticle);
+            AttachParticle(entity, m_strParticle);
         }
     }
 }
@@ -957,7 +976,7 @@ stock bool HasInvulnerabilityCond(client)
     
     return false;
 }
-stock bool:IsValidEnt( m_iEntity )
+stock bool:IsValidEnt( entity )
 {
     if ( IsValidEdict( entity ) )
     {
@@ -976,4 +995,24 @@ stock bool:IsValidEnt( m_iEntity )
         }
     }
     return false;
+}
+stock AttackSpeedLimit( client, weapon, slot, Float:attack_speed )
+{
+    if ( IsValidClient( client ) && IsValidEntity( weapon ) && IsValidEdict( weapon ) )
+    {
+        if ( slot < 2 )
+        {
+            if ( attack_speed < 0.0 ) TF2Attrib_SetByName( weapon, "fire rate bonus", 0.0 );
+        }
+        else if ( slot == 2 )
+        {
+            if ( TF2_GetPlayerClass( client ) == TFClass_Scout ) {
+                if ( attack_speed < 0.392 ) TF2Attrib_SetByName( weapon, "fire rate bonus", 0.392 );
+            } else if ( TF2_GetPlayerClass( client ) == TFClass_Spy ) {
+                if ( attack_speed < 0.001 ) TF2Attrib_SetByName( weapon, "fire rate bonus", 0.001 );
+            } else {
+                if ( attack_speed < 0.245 ) TF2Attrib_SetByName( weapon, "fire rate bonus", 0.245 );
+            }
+        }
+    }
 }
