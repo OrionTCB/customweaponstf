@@ -1171,7 +1171,8 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 }
             }
         }
-        if ( GetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter" ) == 0.0 ) m_bBools[m_iClient][m_bBuffDeployed] = false;
+        if ( GetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter" ) < 1.0 )
+            m_bBools[m_iClient][m_bBuffDeployed] = false;
     }
 
     return m_iButtons;
@@ -1263,7 +1264,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE ) ) {
-        Format( m_strHUDDamageReceivedUnleashedDeath, sizeof( m_strHUDDamageReceivedUnleashedDeath ), "Damage %i", m_flFloats[m_iClient][m_flDamageReceived] );
+        Format( m_strHUDDamageReceivedUnleashedDeath, sizeof( m_strHUDDamageReceivedUnleashedDeath ), "Damage %.0f", m_flFloats[m_iClient][m_flDamageReceived] );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bDamageResHealthMissing_ATTRIBUTE ) )
@@ -3071,19 +3072,27 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 {
                     new active    = GetAttributeValueI( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_PoA );
                     new Float:pct = GetAttributeValueF( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_flDamageReceivedUnleashedDeath_Percentage );
+                    new backstab  = GetAttributeValueI( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_Backstab );
 
-                    if ( GetAttributeValueI( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, m_iDamageReceivedUnleashedDeath_Backstab ) != 1 && m_iCustom != TF_CUSTOM_BACKSTAB )
+                    if ( backstab == 0 || backstab == 1 && m_iCustom != TF_CUSTOM_BACKSTAB  )
                     {
                         if ( active == 0 || HasAttribute( m_iVictim, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE, true ) && active == 1 )
-                            m_flFloats[m_iVictim][m_flDamageReceived] += ( m_flDamage * pct );
-
-                        for ( new particles = 0; particles < 20.0 * ( 1.1-( FloatDiv( ( GetClientHealth( m_iVictim ) < TF2_GetClientMaxHealth( m_iVictim ) ? GetClientHealth( m_iVictim ) : TF2_GetClientMaxHealth( m_iVictim ) )+0.0, TF2_GetClientMaxHealth( m_iVictim )+0.0 ) ) ); particles++ )
                         {
-                            new Float:w[3];
-                            w[0] += GetRandomFloat( -20.0, 20.0 );
-                            w[1] += GetRandomFloat( -20.0, 20.0 );
-                            w[2] += GetRandomFloat( 5.0, 70.0 );
-                            AttachParticle( m_iVictim, "sapper_sentry1_fx", m_flDamage / 10.0, w, w );
+                            new Float:damage_t = m_flDamage * pct;
+                            m_flFloats[m_iVictim][m_flDamageReceived] += damage_t;
+
+                            for ( new particles = 0; particles < ( 25.0 > damage_t / 4.0 ? damage_t / 4.0 : 25.0 ) ; particles++ )
+                            {
+                                new Float:w[3];
+                                new Float:rnd_t = GetRandomFloat( damage_t / 30.0, damage_t / 15.0 );
+                                if ( rnd_t < 1.0 ) rnd_t = 1.0;
+                                if ( rnd_t > 4.0 ) rnd_t = 4.0;
+
+                                w[0] += GetRandomFloat( -20.0, 20.0 );
+                                w[1] += GetRandomFloat( -20.0, 20.0 );
+                                w[2] += GetRandomFloat( 5.0, 70.0 );
+                                AttachParticle( m_iVictim, "sapper_sentry1_fx", rnd_t, w, w );
+                            }
                         }
                     }
                 }
