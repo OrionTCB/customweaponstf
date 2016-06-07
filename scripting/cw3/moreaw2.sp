@@ -738,7 +738,7 @@ ATTRIBUTE_FLYWHILESHOOTING( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( GetEntityFlags( m_iClient ) & FL_ONGROUND ) return m_iButtons;
         if ( GetEntityFlags( m_iClient ) & FL_INWATER ) return m_iButtons;
         if ( GetEntProp( m_iWeapon, Prop_Send, "m_bLowered" ) ) return m_iButtons;
-        if ( IsClientLookingAWall( m_iClient ) ) return m_iButtons;
+        if ( IsClientLookingAWall( m_iClient, 50.0 ) ) return m_iButtons;
 
         decl String:weaponStr[64];
         GetClientWeapon( m_iClient, weaponStr, sizeof( weaponStr ) );
@@ -844,7 +844,7 @@ ATTRIBUTE_CHARGEDAIRBLAST( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         // If I do x *= value, it'll loop and de/increases indefinitly.
 
-        new ammo = GetAmmo( m_iClient, TFWeaponSlot_Primary );
+        new ammo = GetCarriedAmmo( m_iClient, TFWeaponSlot_Primary );
         if ( ammo < m_flAirblastCost ) return m_iButtons;
 
         static bool:m_bCharging[MAXPLAYERS + 1];
@@ -989,8 +989,8 @@ ATTRIBUTE_ELECTROSHOCK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bElectroshock_ATTRIBUTE ) ) {
         if ( m_flFloats[m_iClient][m_flElectroshockEngine] >= GetEngineTime() - GetAttributeValueF( m_iClient, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) )
         {
-            SetWeaponAmmo( m_iClient, 0, 0 );
-            SetWeaponAmmo( m_iClient, 1, 0 );
+            SetLoadedAmmo( m_iClient, 0, 0 );
+            SetLoadedAmmo( m_iClient, 1, 0 );
             SetEntityHealth( m_iClient, 1 );
         }
     }
@@ -1845,27 +1845,27 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                             EmitSoundToAll( SOUND_VO_HEAVY_I_LIVE, m_iVictim, _, SNDLEVEL_SCREAMING );
                             EmitSoundToClient( m_iVictim, SOUND_UBER, _, _, SNDLEVEL_SCREAMING );
                             TF2_AddCondition( m_iVictim, TFCond_Ubercharged, GetAttributeValueF( m_iVictim, _, m_bElectroshock_ATTRIBUTE, m_flElectroshock_Duration ) );
-                            SetWeaponAmmo( m_iVictim, 0, 0 );
-                            SetWeaponAmmo( m_iVictim, 1, 0 );
+                            SetLoadedAmmo( m_iVictim, 0, 0 );
+                            SetLoadedAmmo( m_iVictim, 1, 0 );
                             TF2_SetClientSlot( m_iVictim, 2 );
-                                
+
                             m_flDamage = 0.0;
                             SetEntityHealth( m_iVictim, 1 );
                             m_flFloats[m_iVictim][m_flElectroshock] = 0.0;
-                                
+
                             m_flFloats[m_iVictim][m_flElectroshockEngine] = GetEngineTime();
-                                
+
                             decl Float:m_flAngles[3], Float:m_flVelocity[3], Float:m_flOrigin[3];
                             GetClientEyePosition( m_iVictim, m_flOrigin );
                             GetClientEyeAngles( m_iVictim, m_flAngles );
                             AnglesToVelocity( m_flAngles, m_flVelocity, 250.0 );
-                                
+
                             AttachParticle( m_iVictim, PARTICLE_ZEUS, 1.5, m_flOrigin );
-                                
+
                             m_flOrigin[0] += 10.0;
                             m_flOrigin[1] += 5.0;
                             m_flOrigin[2] += 5.0;
-                                
+
                             AttachParticle( m_iVictim, PARTICLE_ZEUS, 1.5, m_flOrigin );
                                 
                             m_flOrigin[0] -= 15.0;
