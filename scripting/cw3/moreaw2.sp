@@ -2050,6 +2050,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                         if ( m_bNoBackstab_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Spy && m_iCustom == TF_CUSTOM_BACKSTAB )
                         {
                             if ( m_iNoBackstab_Crit[m_iAttacker][m_iSlot] == 0 ) m_iType = TF_DMG_MELEE;
+                            else m_iType = TF_DMG_MELEE|TF_DMG_CRIT;
                             m_flDamage = m_flNoBackstab_Damage[m_iAttacker][m_iSlot];
                         }
 
