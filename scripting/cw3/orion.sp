@@ -760,7 +760,6 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     {
         if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
         {
-            new Float:attack_speed = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_AttackSpeed, true );
             new Float:delay = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_Delay, true );
             new Float:old_as = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_OldAttackSpeed, true );
 
@@ -768,19 +767,19 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             new ammo_l = GetClipAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
             new ammo_c = GetCarriedAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
 
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+            new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
+            new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
+
             decl String:m_sWeapon[20];
             GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
             if ( !GetEntProp( m_iWeapon, Prop_Data, "m_bInReload" ) && ammo_l > 0 && !StrEqual( m_sWeapon, "tf_weapon_minigun" )
-              || ammo_c > 0 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) )
+                || ammo_c > 0 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) )
             {
                 if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
                 {
                     if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE )
                     {
-                        if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-                        new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
-                        new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-
                         new Handle:m_hData01 = CreateDataPack();
                         m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] = CreateDataTimer( delay, m_tHeatAttackSpeed_TimerDelay, m_hData01 );
                         WritePackCell( m_hData01, m_iWeapon );
@@ -789,44 +788,25 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                     }
                 }
                 else {
-                    TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-                    ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+                    if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] != INVALID_HANDLE )
+                        ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
                 }
             }
-            else ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
-
-            if ( m_iIntegers[m_iClient][m_iHeat] == 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
             else {
-                if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-                new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
-                new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-                new Float:fValue = attack_speed * m_iIntegers[m_iClient][m_iHeat];
+                if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] != INVALID_HANDLE )
+                    ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+            }
 
-                for ( new m_iSlot2 = 0; m_iSlot2 <= 2; m_iSlot2++ )
-                {
-                    if ( HasAttribute( m_iClient, m_iSlot2, m_bHeatFireRate_ATTRIBUTE ) )
-                    {
-                        TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as-fValue );
+            for ( new i = 0 ; i <= 2 ; i++ ) {
+                if ( HasAttribute( m_iClient, i, m_bHeatFireRate_ATTRIBUTE ) ) AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
+            }
 
-                        if ( m_iSlot2 == 0 || m_iSlot2 == 1 )
-                        {
-                            if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-                        }
-                        else if ( m_iSlot2 == 2 )
-                        {
-                            if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                                if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                            } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                                if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                            } else {
-                                if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
-                            }
-                        }
-                    }
-                }
+            if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE )
+            {
+                m_iIntegers[m_iClient][m_iHeat] = 0;
+                if ( m_iIntegers[m_iClient][m_iHeat] == 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
             }
         }
-        if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE ) m_iIntegers[m_iClient][m_iHeat] = 0;
     }
 
     return m_iButtons;
@@ -877,26 +857,10 @@ ATTRIBUTE_ATTACKSPEEDONKILL( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
             new Float:fValue = attack_speed * m_iIntegers[m_iClient][m_iAttackSpeed];
 
-            for ( new m_iSlot2 = 0; m_iSlot2 <= 2; m_iSlot2++ )
-            {
-                if ( HasAttribute( m_iClient, m_iSlot2, m_bAttackSpeedOnKill_ATTRIBUTE ) )
-                {
+            for ( new i = 0 ; i <= 2 ; i++ ) {
+                if ( HasAttribute( m_iClient, i, m_bAttackSpeedOnKill_ATTRIBUTE ) ) {
                     TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as-fValue );
-
-                    if ( m_iSlot2 == 0 || m_iSlot2 == 1 )
-                    {
-                        if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-                    }
-                    else if ( m_iSlot2 == 2 )
-                    {
-                        if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                            if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                        } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                            if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                        } else {
-                            if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
-                        }
-                    }
+                    AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
                 }
             }
         }
@@ -3929,7 +3893,8 @@ public Action:m_tHeatAttackSpeed_TimerDelay( Handle:timer, any:m_hData01 )
     m_iClient = ReadPackCell( m_hData01 );
     m_flAttackSpeed = ReadPackFloat( m_hData01 );
 
-    if ( m_iWeapon != -1 && IsValidEdict( m_iWeapon ) && IsValidClient( m_iClient ) ) {
+    if ( m_iWeapon != -1 && IsValidEdict( m_iWeapon ) && IsValidClient( m_iClient ) )
+    {
         if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE ) )
         {
             if ( m_iIntegers[m_iClient][m_iHeat] >= GetAttributeValueI( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_iHeatFireRate_MaximumStack ) ) {
