@@ -102,7 +102,7 @@ new bool:m_bDrainUbercharge_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDrainUbercharge_Percentage[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bMetalOnHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flMetalOnHit_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iMetalOnHit_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bUberchargeOnHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flUberchargeOnHit_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -173,7 +173,7 @@ new bool:m_bDamageSelf_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iDamageSelf_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bMetalPerShot_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flMetalPerShot_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iMetalPerShot_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bMCFRTD_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flMCFRTD_AttackSpeed[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -332,7 +332,7 @@ new Float:m_flMissingEnemyHealthLifesteal_OverHealBonusCap[MAXPLAYERS + 1][MAXSL
      * ---------------------------------------------------------------------- */
 
 new bool:m_bMetalDrain_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flMetalDrain_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iMetalDrain_Amount[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flMetalDrain_Interval[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iMetalDrain_PoA[MAXPLAYERS + 1][MAXSLOTS + 1];
 
@@ -421,6 +421,7 @@ new Float:m_flChanceJarate_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bChanceBleed_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flChanceBleed_Chance[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flChanceBleed_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iChanceBleed_Stack[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 
     /* On Damage Received
@@ -654,6 +655,7 @@ public Event_PostInventoryApplication( Handle:m_hEvent, const String:m_strName[]
         if ( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] != INVALID_HANDLE && m_bBools[m_iClient][m_bInfiniteAfterburnRessuply] )
         {
             ClearTimer( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] );
+            m_bBools[m_iClient][m_bInfiniteAfterburnRessuply] = false;
             g_pBurner[m_iClient] = -1;
         }
         if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
@@ -754,68 +756,71 @@ public OnPreThink( m_iClient )
 
 ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
+    if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE ) )
     {
-        new Float:attack_speed = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_AttackSpeed, true );
-        new Float:delay = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_Delay, true );
-        new Float:old_as = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_OldAttackSpeed, true );
-
-        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
-
-        new ammo = GetAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
-        if ( ammo <= 0 )
-            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
-
-        if ( GetEntProp( m_iWeapon, Prop_Data, "m_bInReload") )
-            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
-
-        decl String:m_sWeapon[20];
-        GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
-        if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
+        if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
         {
-            if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE )
+            new Float:attack_speed = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_AttackSpeed, true );
+            new Float:delay = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_Delay, true );
+            new Float:old_as = GetAttributeValueF( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_flHeatFireRate_OldAttackSpeed, true );
+
+            new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
+            new ammo_l = GetClipAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
+            new ammo_c = GetCarriedAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
+
+            decl String:m_sWeapon[20];
+            GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
+            if ( !GetEntProp( m_iWeapon, Prop_Data, "m_bInReload" ) && ammo_l > 0 && !StrEqual( m_sWeapon, "tf_weapon_minigun" )
+              || ammo_c > 0 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) )
             {
+                if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
+                {
+                    if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] == INVALID_HANDLE )
+                    {
+                        if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+                        new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
+                        new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
+
+                        new Handle:m_hData01 = CreateDataPack();
+                        m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] = CreateDataTimer( delay, m_tHeatAttackSpeed_TimerDelay, m_hData01 );
+                        WritePackCell( m_hData01, m_iWeapon );
+                        WritePackCell( m_hData01, m_iClient );
+                        WritePackFloat( m_hData01, m_flAttackSpeed );
+                    }
+                }
+                else {
+                    TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+                    ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+                }
+            }
+            else ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
+
+            if ( m_iIntegers[m_iClient][m_iHeat] == 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+            else {
                 if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
                 new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
                 new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
+                new Float:fValue = attack_speed * m_iIntegers[m_iClient][m_iHeat];
 
-                m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] = CreateDataPack();
-                CreateDataTimer( delay, m_tHeatAttackSpeed_TimerDelay, m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
-                WritePackCell( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_iWeapon );
-                WritePackCell( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_iClient );
-                WritePackFloat( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay], m_flAttackSpeed );
-            }
-        }
-        else {
-            TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
-        }
-
-        if ( m_iIntegers[m_iClient][m_iHeat] == 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-        else {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
-            new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-            new Float:fValue = attack_speed * m_iIntegers[m_iClient][m_iHeat];
-
-            for ( new m_iSlot2 = 0; m_iSlot2 <= 2; m_iSlot2++ )
-            {
-                if ( HasAttribute( m_iClient, m_iSlot2, m_bHeatFireRate_ATTRIBUTE ) )
+                for ( new m_iSlot2 = 0; m_iSlot2 <= 2; m_iSlot2++ )
                 {
-                    TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as-fValue );
+                    if ( HasAttribute( m_iClient, m_iSlot2, m_bHeatFireRate_ATTRIBUTE ) )
+                    {
+                        TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as-fValue );
 
-                    if ( m_iSlot2 == 0 || m_iSlot2 == 1 )
-                    {
-                        if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-                    }
-                    else if ( m_iSlot2 == 2 )
-                    {
-                        if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                            if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                        } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                            if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                        } else {
-                            if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
+                        if ( m_iSlot2 == 0 || m_iSlot2 == 1 )
+                        {
+                            if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
+                        }
+                        else if ( m_iSlot2 == 2 )
+                        {
+                            if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
+                                if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
+                            } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
+                                if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
+                            } else {
+                                if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
+                            }
                         }
                     }
                 }
@@ -829,25 +834,27 @@ ATTRIBUTE_HEATFIRERATE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 ATTRIBUTE_HEATDMGTAKEN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, true ) )
+    if ( HasAttribute( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE ) )
     {
-        new Float:delay = GetAttributeValueF( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_Delay, true );
-
-        new ammo = GetAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
-        if ( ammo <= 0 ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
-
-        if ( GetEntProp( TF2_GetClientActiveWeapon( m_iClient ), Prop_Data, "m_bInReload") )
-            ClearTimer( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] );
-
-        decl String:m_sWeapon[20];
-        GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
-        if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
+        if ( HasAttribute( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, true ) )
         {
-            if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] == INVALID_HANDLE )
-                m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] = CreateTimer( delay, m_tHeatDMGTaken_TimerDelay, m_iClient );
-        } 
-        else m_iIntegers[m_iClient][m_iHeatToo] = 0;
+            new Float:delay = GetAttributeValueF( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_Delay, true );
 
+            new ammo = GetCarriedAmmo( m_iClient, TF2_GetClientActiveSlot( m_iClient ) );
+            if ( ammo <= 0 ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
+
+            if ( GetEntProp( TF2_GetClientActiveWeapon( m_iClient ), Prop_Data, "m_bInReload") )
+                ClearTimer( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] );
+
+            decl String:m_sWeapon[20];
+            GetClientWeapon( m_iClient, m_sWeapon, sizeof( m_sWeapon ) );
+            if ( m_iButtons & IN_ATTACK == IN_ATTACK || m_iButtons & IN_ATTACK2 == IN_ATTACK2 && StrEqual( m_sWeapon, "tf_weapon_minigun" ) ) // Thx FlaminSarge.
+            {
+                if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] == INVALID_HANDLE )
+                    m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] = CreateTimer( delay, m_tHeatDMGTaken_TimerDelay, m_iClient );
+            } 
+            else m_iIntegers[m_iClient][m_iHeatToo] = 0;
+        }
         if ( m_hTimers[m_iClient][m_hHeatDamage_TimerDelay] == INVALID_HANDLE ) m_iIntegers[m_iClient][m_iHeatToo] = 0;
     }
 
@@ -911,8 +918,8 @@ ATTRIBUTE_MCFRTD( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {
             new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
 
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            if ( m_iIntegers[m_iClient][m_iMissStack] <= 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate penalty" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate penalty", old_as );
+            if ( m_iIntegers[m_iClient][m_iMissStack] <= 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate penalty", old_as );
         }
     }
 
@@ -1661,7 +1668,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         new String:m_sValues[3][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
-        m_flMetalDrain_Amount[m_iClient][m_iSlot]   = StringToFloat( m_sValues[0] );
+        m_iMetalDrain_Amount[m_iClient][m_iSlot]    = StringToInt( m_sValues[0] );
         m_flMetalDrain_Interval[m_iClient][m_iSlot] = StringToFloat( m_sValues[1] );
         m_iMetalDrain_PoA[m_iClient][m_iSlot]       = StringToInt( m_sValues[2] );
         m_bMetalDrain_ATTRIBUTE[m_iClient][m_iSlot]          = true;
@@ -1681,8 +1688,8 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "metal per shot" ) )
     {
-        m_flMetalPerShot_Amount[m_iClient][m_iSlot]      = StringToFloat( m_sValue );
-        m_bMetalPerShot_ATTRIBUTE[m_iClient][m_iSlot]    = true;
+        m_iMetalPerShot_Amount[m_iClient][m_iSlot]      = StringToInt( m_sValue );
+        m_bMetalPerShot_ATTRIBUTE[m_iClient][m_iSlot]   = true;
         m_aAction = Plugin_Handled;
     }
     /* Metal On Hit
@@ -1690,7 +1697,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "metal on hit" ) )
     {
-        m_flMetalOnHit_Amount[m_iClient][m_iSlot]    = StringToFloat( m_sValue );
+        m_iMetalOnHit_Amount[m_iClient][m_iSlot]     = StringToInt( m_sValue );
         m_bMetalOnHit_ATTRIBUTE[m_iClient][m_iSlot]  = true;
         m_aAction = Plugin_Handled;
     }
@@ -2238,11 +2245,12 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "chance to bleed" ) )
     {
-        new String:m_sValues[2][10];
+        new String:m_sValues[3][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flChanceBleed_Chance[m_iClient][m_iSlot]   = StringToFloat( m_sValues[0] );
         m_flChanceBleed_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValues[1] );
+        m_iChanceBleed_Stack[m_iClient][m_iSlot]     = StringToInt( m_sValues[2] );
         m_bChanceBleed_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
@@ -2319,13 +2327,19 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flDrainUbercharge_Percentage[m_iClient][m_iSlot]           = 0.0;
 
             m_bMetalOnHit_ATTRIBUTE[m_iClient][m_iSlot]                  = false;
-            m_flMetalOnHit_Amount[m_iClient][m_iSlot]                    = 0.0;
+            m_iMetalOnHit_Amount[m_iClient][m_iSlot]                     = 0;
 
             m_bUberchargeOnHit_ATTRIBUTE[m_iClient][m_iSlot]             = false;
             m_flUberchargeOnHit_Amount[m_iClient][m_iSlot]               = 0.0;
 
             m_bRemoveBleeding_ATTRIBUTE[m_iClient][m_iSlot]              = false;
 
+            if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "Set DamageType Ignite" );
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "weapon burn time increased" );
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "weapon burn time reduced" );
+            }
             m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iClient][m_iSlot]         = false;
             m_flAfterburnCLOSERANGE_Duration[m_iClient][m_iSlot]         = 0.0;
             m_flAfterburnCLOSERANGE_Range[m_iClient][m_iSlot]            = 0.0;
@@ -2386,8 +2400,12 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_iDamageSelf_Amount[m_iClient][m_iSlot]         = 0;
 
             m_bMetalPerShot_ATTRIBUTE[m_iClient][m_iSlot]    = false;
-            m_flMetalPerShot_Amount[m_iClient][m_iSlot]      = 0.0;
+            m_iMetalPerShot_Amount[m_iClient][m_iSlot]       = 0;
 
+            if ( m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate penalty" );
+            }
             m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot]          = false;
             m_flMCFRTD_AttackSpeed[m_iClient][m_iSlot]       = 0.0;
             m_flMCFRTD_OldAttackSpeed[m_iClient][m_iSlot]    = 0.0;
@@ -2404,6 +2422,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_iSpawnSkeletonOnKill_Boss[m_iClient][m_iSlot]          = 0;
             m_flSpawnSkeletonOnKill_BossChance[m_iClient][m_iSlot]   = 0.0;
 
+            if ( m_bAttackSpeedOnKill_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+            }
             m_bAttackSpeedOnKill_ATTRIBUTE[m_iClient][m_iSlot]       = false;
             m_flAttackSpeedOnKill_AttackSpeed[m_iClient][m_iSlot]    = 0.0;
             m_flAttackSpeedOnKill_Removal[m_iClient][m_iSlot]        = 0.0;
@@ -2492,6 +2514,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bMetalOnHitDamage_ATTRIBUTE[m_iClient][m_iSlot]                            = false;
             m_flMetalOnHitDamage_Multiplier[m_iClient][m_iSlot]                          = 0.0;
 
+            if ( m_bBonusDamageVsSapper_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "dmg penalty vs buildings" );
+            }
             m_bBonusDamageVsSapper_ATTRIBUTE[m_iClient][m_iSlot]                         = false;
             m_flBonusDamageVsSapper_Multiplier[m_iClient][m_iSlot]                       = 0.0;
 
@@ -2547,7 +2573,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
              * ---------------------------------------------------------------------- */
 
             m_bMetalDrain_ATTRIBUTE[m_iClient][m_iSlot]                  = false;
-            m_flMetalDrain_Amount[m_iClient][m_iSlot]                    = 0.0;
+            m_iMetalDrain_Amount[m_iClient][m_iSlot]                     = 0;
             m_flMetalDrain_Interval[m_iClient][m_iSlot]                  = 0.0;
             m_iMetalDrain_PoA[m_iClient][m_iSlot]                        = 0;
 
@@ -2560,6 +2586,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flLowBerserker_Threshold[m_iClient][m_iSlot]               = 0.0;
             m_iLowBerserker_Kill[m_iClient][m_iSlot]                     = 0;
 
+            if ( m_bHeatFireRate_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+            }
             m_bHeatFireRate_ATTRIBUTE[m_iClient][m_iSlot]                = false;
             m_flHeatFireRate_AttackSpeed[m_iClient][m_iSlot]             = 0.0;
             m_flHeatFireRate_Delay[m_iClient][m_iSlot]                   = 0.0;
@@ -2612,6 +2642,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bSetWeaponSwitch_ATTRIBUTE[m_iClient][m_iSlot]             = false;
             m_iSetWeaponSwith_Slot[m_iClient][m_iSlot]                   = 0;
 
+            if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "bullets per shot bonus" );
+            }
             m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot]  = false;
 
 
@@ -2636,6 +2670,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bChanceBleed_ATTRIBUTE[m_iClient][m_iSlot]     = false;
             m_flChanceBleed_Chance[m_iClient][m_iSlot]       = 0.0;
             m_flChanceBleed_Duration[m_iClient][m_iSlot]     = 0.0;
+            m_iChanceBleed_Stack[m_iClient][m_iSlot]         = 0;
 
 
             /* On Damage Received
@@ -3124,7 +3159,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                         }
                     }
                 //-//
-                    if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro && m_flDamage >= 1.0 )
+                    if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) != TFClass_Pyro )
                     {
                         new Float:duration = m_flAfterburnCLOSERANGE_Duration[m_iAttacker][m_iSlot];
                         if ( duration <= 0.0 ) duration = 1.0;
@@ -3141,9 +3176,8 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                                 if ( duration > 1.0 ) { // If higher than 1 (10 seconds)
                                     if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
                                 } else if ( duration < 1.0 ) { // If lower than 1 (10 seconds)
-                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
+                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time reduced" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time reduced", duration );
                                 }
-                                
                             }
                         }
                         else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
@@ -3170,11 +3204,13 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 
                         if ( m_flChanceIgnite_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
                         {
-                            if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) )
-                            {
+                            if ( !TF2Attrib_GetByName( m_iWeapon, "Set DamageType Ignite" ) ) {
                                 TF2Attrib_SetByName( m_iWeapon, "Set DamageType Ignite", 1.0 );
-                                if ( duration > 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
-                                else if ( duration < 1.0 ) if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time decreased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time decreased", duration );
+                                if ( duration > 1.0 ) { // If higher than 1 (10 seconds)
+                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time increased" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time increased", duration );
+                                } else if ( duration < 1.0 ) { // If lower than 1 (10 seconds)
+                                    if ( !TF2Attrib_GetByName( m_iWeapon, "weapon burn time reduced" ) ) TF2Attrib_SetByName( m_iWeapon, "weapon burn time reduced", duration );
+                                }
                             }
                         }
                         else TF2Attrib_RemoveByName( m_iWeapon, "Set DamageType Ignite" );
@@ -3194,8 +3230,14 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 //-//
                     if ( m_bChanceBleed_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
+                        new stack = m_iChanceBleed_Stack[m_iAttacker][m_iSlot];
+                        new Float:duration = m_flChanceBleed_Duration[m_iAttacker][m_iSlot];
                         if ( m_flChanceBleed_Chance[m_iAttacker][m_iSlot] >= GetRandomFloat( 0.0, 1.0 ) )
-                            TF2_MakeBleed( m_iVictim, m_iAttacker, m_flChanceBleed_Duration[m_iAttacker][m_iSlot] );
+                        {
+                            if ( !TF2_IsPlayerInCondition( m_iVictim, TFCond_Bleeding ) && stack == 0
+                              || stack == 1 )
+                                TF2_MakeBleed( m_iVictim, m_iAttacker, duration );
+                        }
                     }
                 //-//
                     if ( m_bRemoveBleeding_ATTRIBUTE[m_iAttacker][m_iSlot] )
@@ -3260,13 +3302,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                             TF2_SetClientUberLevel( m_iAttacker, TF2_GetClientUberLevel( m_iAttacker ) + m_flUberchargeOnHit_Amount[m_iAttacker][m_iSlot] );
                     //-//
                         if ( m_bMetalOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Engineer )
-                        {
-                            new Float:metal = m_flMetalOnHit_Amount[m_iAttacker][m_iSlot];
-                            new metal_p     = TF2_GetClientMetal( m_iAttacker );
-                            new metal_n     = RoundToFloor( metal_p + ( metal < 1.0 ? metal_p * metal : metal ) );
-
-                            TF2_SetClientMetal( m_iAttacker, metal_n );
-                        }
+                            TF2_SetClientMetal( m_iAttacker, TF2_GetClientMetal( m_iAttacker ) + m_iMetalOnHit_Amount[m_iAttacker][m_iSlot] );
                     //-//
                         if ( m_bMarkVictimDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
@@ -3444,13 +3480,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
                 DealDamage( m_iClient, m_iDamageSelf_Amount[m_iClient][m_iSlot], m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE|HL_DMG_GENERIC );
         //-//
             if ( m_bMetalPerShot_ATTRIBUTE[m_iClient][m_iSlot] && TF2_GetPlayerClass( m_iClient ) == TFClass_Engineer )
-            {
-                new Float:metal = m_flMetalPerShot_Amount[m_iClient][m_iSlot];
-                new metal_p      = TF2_GetClientMetal( m_iClient );
-                new metal_n     = RoundToFloor( metal_p + ( metal < 1.0 ? metal_p * metal : metal ) );
-
-                TF2_SetClientMetal( m_iClient, metal_n );
-            }
+                TF2_SetClientMetal( m_iClient, TF2_GetClientMetal( m_iClient ) + m_iMetalPerShot_Amount[m_iClient][m_iSlot] );
         //-//
             if ( m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot] )
             {
@@ -3469,7 +3499,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
             }
         //-//
             if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] )
-                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetEntProp( m_iWeapon, Prop_Data, "m_iClip1" )+0.0 );
+                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetClipAmmo( m_iClient, m_iWeapon )+0.0 );
         }
     }
     return Plugin_Continue;
@@ -3679,11 +3709,15 @@ public OnGameFrame()
             new mode = GetAttributeValueI( i, _, m_bHomingProjectile_ATTRIBUTE, m_iHomingProjectile_Mode );
             new type = GetAttributeValueI( i, _, m_bHomingProjectile_ATTRIBUTE, m_iHomingProjectile_Type );
 
-            SetHomingProjectile( i, "tf_projectile_energy_ball", radius, mode, type );
-            SetHomingProjectile( i, "tf_projectile_rocket", radius, mode, type );
-            SetHomingProjectile( i, "tf_projectile_healing_bolt", radius, mode, type );
-            SetHomingProjectile( i, "tf_projectile_flare", radius, mode, type );
-            SetHomingProjectile( i, "tf_projectile_arrow", radius, mode, type );
+            if ( HasAttribute( i, 0, m_bHomingProjectile_ATTRIBUTE ) )
+            {
+                SetHomingProjectile( i, "tf_projectile_energy_ball", radius, mode, type );
+                SetHomingProjectile( i, "tf_projectile_rocket",      radius, mode, type );
+                SetHomingProjectile( i, "tf_projectile_healing_bolt", radius, mode, type );
+                SetHomingProjectile( i, "tf_projectile_arrow",       radius, mode, type );
+            }
+            if ( HasAttribute( i, 1, m_bHomingProjectile_ATTRIBUTE ) && TF2_GetPlayerClass( i ) == TFClass_Pyro )
+                SetHomingProjectile( i, "tf_projectile_flare", radius, mode, type );
         }
     }
 }
@@ -3775,17 +3809,13 @@ public Action:m_tDrainMetal_TimerInterval( Handle:timer, any:m_iClient )
 {
     if ( HasAttribute( m_iClient, _, m_bMetalDrain_ATTRIBUTE ) )
     {
-        new Float:metal  = GetAttributeValueF( m_iClient, _, m_bMetalDrain_ATTRIBUTE, m_flMetalDrain_Amount );
-        new metal_p      = TF2_GetClientMetal( m_iClient );
-        new metal_n     = RoundToFloor( metal_p + ( metal < 1.0 ? metal_p * metal : metal ) );
-
         if ( GetAttributeValueI( m_iClient, _, m_bMetalDrain_ATTRIBUTE, m_iMetalDrain_PoA ) == 1 && !HasAttribute( m_iClient, _, m_bMetalDrain_ATTRIBUTE, true ) )
         {
             m_hTimers[m_iClient][m_hDrainMetal_TimerDelay] = INVALID_HANDLE;
             return Plugin_Stop;
         }
         if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Engineer )
-            TF2_SetClientMetal( m_iClient, metal_n );
+            TF2_SetClientMetal( m_iClient, TF2_GetClientMetal( m_iClient ) + GetAttributeValueI( m_iClient, _, m_bMetalDrain_ATTRIBUTE, m_iMetalDrain_Amount ) );
     }
 
     m_hTimers[m_iClient][m_hDrainMetal_TimerDelay] = INVALID_HANDLE;
@@ -3958,14 +3988,14 @@ public Action:m_tMCFRTD_Timer( Handle:timer, Handle:m_hData03 )
         {
             m_bBools[m_iClient][m_bLastWasMiss] = true;
 
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus",GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_OldAttackSpeed ) );
-            new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate penalty" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate penalty",GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_OldAttackSpeed ) );
+            new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate penalty" );
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
-            TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", m_flAttackSpeed + GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_AttackSpeed ) );
+            TF2Attrib_SetByName( m_iWeapon, "fire rate penalty", m_flAttackSpeed + GetAttributeValueF( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_flMCFRTD_AttackSpeed ) );
             m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
-            if ( m_flAttackSpeed <= 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
+            if ( m_flAttackSpeed <= 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate penalty", 0.0 );
 
             m_iIntegers[m_iClient][m_iMissStack]++;
         }
