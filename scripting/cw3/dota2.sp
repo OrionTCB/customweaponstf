@@ -61,10 +61,10 @@ new bool:m_bBools[MAXPLAYERS + 1][m_bBool];
 enum
 {
     m_flDesolator_DamageAmplification = 0,
-    m_flDuel_Bonus,
     m_flEvasionChance_AW2,
     /*m_flPRD_StackBad,*/
     m_flRadiance_SubAbilityChance,
+    m_flDuel_Bonus,
     m_flFloat
 };
 new Float:m_flFloats[MAXPLAYERS + 1][m_flFloat];
@@ -536,18 +536,8 @@ ATTRIBUTE_OVERPOWER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_hTimers[m_iClient][m_hOverPower_TimerDuration] != INVALID_HANDLE ) // When active
         {
-            if ( m_iSlot == 0 || m_iSlot == 1 ) {
-                if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-            }
-            else if ( m_iSlot == 2 ) {
-                if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                    if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                    if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                } else {
-                    if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
-                }
-                // If the fire rate is too fast, the animation won't allow you to land your attack.
+            for ( new i = 0 ; i <= 2 ; i++ ) {
+                if ( HasAttribute( m_iClient, i, m_bOverPower_ATTRIBUTE ) ) AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
             }
 
             if ( m_iIntegers[m_iClient][m_iOverpower_RemainingHit] <= 0 )
@@ -578,23 +568,10 @@ ATTRIBUTE_FERVOR( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
             }
             
-            if ( m_iSlot == 0 || m_iSlot == 1 ) {
-                if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-            }
-            else if ( m_iSlot == 2 ) {
-                if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                    if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                    if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                } else {
-                    if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
-                }
-                // If the fire rate is too fast, the animation won't allow you to land your attack.
+            for ( new i = 0 ; i <= 2 ; i++ ) {
+                if ( HasAttribute( m_iClient, i, m_bFervor_ATTRIBUTE ) ) AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
             }
         }
-    }
-    else if ( !HasAttribute( m_iClient, _, m_bFervor_ATTRIBUTE ) ) {
-        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iFervor_Stack] = 0;
     }
 
     return m_iButtons;
@@ -641,6 +618,7 @@ ATTRIBUTE_ENRAGE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 TF2_AddCondition( m_iClient, TFCond_MegaHeal, duration );                                                           // Fancy effects.
                 TF2_AddCondition( m_iClient, TFCond_TeleportedGlow, duration );                                                     // Fancy effects.
                 TF2_AddCondition( m_iClient, TFCond_Teleporting, duration );                                                        // Fancy effects.
+                TF2_AddCondition( m_iClient, TFCond_RestrictToMelee, duration );                                                    // NOT SO Fancy effects.
                 TF2_RemoveBadCondition( m_iClient, true );
 
                 PrintHintText( m_iClient, "Custom: Enrage is now active, Fury Swipes damage increased by %.3f. Lasts for %.2f seconds", GetAttributeValueF( m_iClient, _, m_bEnrage_ATTRIBUTE, m_flEnrage_FurySwipeMultiplier, true ), duration );
@@ -804,6 +782,12 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     }
     if ( !HasAttribute( m_iClient, _, m_bEvasionAW2_ATTRIBUTE ) ) {
         if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_flFloats[m_iClient][m_flEvasionChance_AW2] = 0.0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iBloodstone_Charge] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bFervor_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iFervor_Stack] = 0;
     }
     if ( !HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) ) {
         if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) TF2Attrib_RemoveByName( m_iClient, "health regen" ); 
@@ -1271,6 +1255,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bTrueStrike_ATTRIBUTE[m_iClient][m_iSlot]      = false;
 
+            if ( m_bFervor_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+            }
             m_bFervor_ATTRIBUTE[m_iClient][m_iSlot]          = false;
             m_flFervor_AttackSpeed[m_iClient][m_iSlot]       = 0.0;
             m_flFervor_OldAttackSpeed[m_iClient][m_iSlot]    = 0.0;
@@ -1395,6 +1383,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flEnchantTotem_Cooldown[m_iClient][m_iSlot]            = 0.0;
             m_flEnchantTotem_Duration[m_iClient][m_iSlot]            = 0.0;
 
+            if ( m_bOverPower_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+            }
             m_bOverPower_ATTRIBUTE[m_iClient][m_iSlot]               = false;
             m_flOverPower_AttackSpeed[m_iClient][m_iSlot]            = 0.0;
             m_flOverPower_Cooldown[m_iClient][m_iSlot]               = 0.0;
@@ -1423,6 +1415,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bLastWill_ATTRIBUTE[m_iClient][m_iSlot]    = false;
             m_iLastWill_Damage[m_iClient][m_iSlot]       = 0;
 
+            if ( m_bBloodstone_ATTRIBUTE[m_iClient][m_iSlot] )
+            {
+                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "health regen" );
+            }
             m_bBloodstone_ATTRIBUTE[m_iClient][m_iSlot]         = false;
             m_iBloodstone_BaseCharge[m_iClient][m_iSlot]        = 0;
             m_flBloodstone_RegenPerCharge[m_iClient][m_iSlot]   = 0.0;
@@ -1591,7 +1587,8 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                          * -------------------------------------------------- */
                         if ( m_bKillAtHighHealthPointsThreshold_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            if ( GetClientHealth( m_iVictim ) >= ( m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] >= 10.0 ? m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] : TF2_GetClientMaxHealth( m_iVictim ) * m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] ) ) {
+                            new Float:tsd = m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot];
+                            if ( GetClientHealth( m_iVictim ) >= ( tsd >= 10.0 ? tsd : TF2_GetClientMaxHealth( m_iVictim ) * tsd ) ) {
                                 TF2_RemoveCondition( m_iVictim, TFCond_Ubercharged );
                                 m_flDamage = 1000000000.0;
                                 m_iType = m_iType|TF_DMG_CRIT;
@@ -1600,7 +1597,8 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     //-//
                         if ( m_bKillAtLowHealthPointsThreshold_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            if ( GetClientHealth( m_iVictim ) <= ( m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] >= 1.0 ? m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] : TF2_GetClientMaxHealth( m_iVictim ) * m_flKillAtHighHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot] ) ) {
+                            new Float:tsd = m_flKillAtLowHealthPointsThreshold_Threshold[m_iAttacker][m_iSlot];
+                            if ( GetClientHealth( m_iVictim ) <= ( tsd >= 1.0 ? tsd : TF2_GetClientMaxHealth( m_iVictim ) * tsd ) ) {
                                 TF2_RemoveCondition( m_iVictim, TFCond_Ubercharged );
                                 m_flDamage = 1000000000.0;
                                 m_iType = m_iType|TF_DMG_CRIT;
@@ -1676,7 +1674,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                         GetClientAbsOrigin( i, m_flPos2 );
 
                         new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                        if ( distance < GetAttributeValueF( m_iVictim, _, m_bDispersion_ATTRIBUTE, m_flDispersion_MaxRadius ) )
+                        if ( distance <= GetAttributeValueF( m_iVictim, _, m_bDispersion_ATTRIBUTE, m_flDispersion_MaxRadius ) )
                         {
                             if ( IsValidClient( m_iAttacker ) && GetClientTeam( m_iAttacker ) == GetClientTeam( m_iVictim ) && m_iAttacker != m_iVictim ) m_flDamage = 0.0;
                             // Why this ? Because grenades, stickies and rockets( ? ) actually DOES damage to their allies ( NO FRIENDLY FIRE ), I noticed this while testing Dispersion near enemies, I 'took' 100 damages from a friendly demoman and it reflected 100 damage to the enemies.
@@ -1692,7 +1690,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                                     new Float:m_flDiv = m_flDiff / ( GetAttributeValueF( m_iVictim, _, m_bDispersion_ATTRIBUTE, m_flDispersion_MaxRadius ) * ( 1 - GetAttributeValueF( m_iVictim, _, m_bDispersion_ATTRIBUTE, m_flDispersion_MinRadius ) ) );
                                     m_flReflect = m_flDamage * ( m_flDiv * GetAttributeValueF( m_iVictim, _, m_bDispersion_ATTRIBUTE, m_flDispersion_MaxDamage ) );
                                 }
-                                //if ( m_iType & TF_DMG_CRIT ) m_flReflect /= 3.0;
                                 if ( m_flReflect < 0.0 ) m_flReflect = 0.0;
                                 DealDamage( i, RoundToFloor( m_flReflect ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_DISPERSION|( m_iType & TF_DMG_BULLET ? HL_DMG_GENERIC : m_iType ), "mannpower_reflect" );
                                 EmitSoundToClient( m_iVictim, SOUND_REFLECT, _, _, _, _, 0.3, 40 );
@@ -1832,14 +1829,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     g_pDuelist[m_iAttacker] = m_iVictim;
                     m_bBools[m_iAttacker][m_bDuel_ReadyForIt] = false;
                     m_bBools[m_iVictim][m_bIsDuel_On] = true;
-
-                    new Float:flPos1[3];
-                    GetClientEyePosition( m_iAttacker, flPos1 );
-                    new Float:flPos2[3];
-                    GetClientEyePosition( m_iVictim, flPos2 );
-
-                    AttachParticle( m_iAttacker, ( GetClientTeam( m_iAttacker ) == 2 ? "duel_red" : "duel_blue" ), 3.0, flPos1 );
-                    AttachParticle( m_iVictim, ( GetClientTeam( m_iVictim ) == 2 ? "duel_red" : "duel_blue" ), 3.0, flPos2 );
                 }
             }
         //-//
@@ -1902,7 +1891,13 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         if ( m_iVictim && !m_bFeignDeath )
         {
             if ( HasAttribute( m_iVictim, _, m_bLastWill_ATTRIBUTE ) ) {
-                if ( IsValidClient( m_iKiller ) && m_iVictim != m_iKiller ) DealDamage( m_iKiller, GetAttributeValueI( m_iVictim, _, m_bLastWill_ATTRIBUTE, m_iLastWill_Damage ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL );
+                if ( IsValidClient( m_iKiller ) && IsPlayerAlive( m_iKiller ) && m_iVictim != m_iKiller )
+                {
+                    new Handle:m_hData05 = CreateDataPack();
+                    CreateDataTimer( 0.031, m_tLastWill_TimerDelay, m_hData05 );
+                    WritePackCell( m_hData05, m_iVictim );
+                    WritePackCell( m_hData05, m_iKiller );
+                }
             }
         //-//
             if ( HasAttribute( m_iVictim, _, m_bNecromastery_ATTRIBUTE ) )
@@ -1914,11 +1909,13 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         //-//
             if ( HasAttribute( m_iVictim, _, m_bDuel_ATTRIBUTE ) ) // If the victim is the one having the attribute = The DUELIST won.
             {
-                if ( m_hTimers[m_iVictim][m_hDuel_TimerDuration] != INVALID_HANDLE && IsValidClient( m_iKiller ) && m_bBools[m_iKiller][m_bIsDuel_On] )
+                if ( m_hTimers[m_iVictim][m_hDuel_TimerDuration] != INVALID_HANDLE && IsValidClient( m_iKiller ) && m_bBools[m_iKiller][m_bIsDuel_On] && m_iVictim != m_iKiller )
                 {
                     m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
-                    g_pDuelist[m_iVictim] = -1;
+
                     ClearTimer( m_hTimers[m_iVictim][m_hDuel_TimerDuration] );
+                    m_bBools[m_iKiller][m_bIsDuel_On] = false;
+                    g_pDuelist[m_iVictim] = -1;
                     // Here, g_pDuelist[m_iVictim] IS THE KILLER.
                     // And, m_iVictim IS THE VICTIM.
                 }
@@ -2020,6 +2017,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
                     if ( m_hTimers[m_iKiller][m_hDuel_TimerDuration] != INVALID_HANDLE && m_bBools[m_iVictim][m_bIsDuel_On] )
                     {
                         m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iKiller, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
+
                         ClearTimer( m_hTimers[m_iKiller][m_hDuel_TimerDuration] );
                         m_bBools[m_iVictim][m_bIsDuel_On] = false;
                         g_pDuelist[m_iKiller] = -1;
@@ -2257,6 +2255,20 @@ public Action:m_tDuel_Enable( Handle:timer, any:m_iClient )
 {
     m_hTimers[m_iClient][m_hDuel_TimerEnable] = INVALID_HANDLE;
 }
+public Action:m_tLastWill_TimerDelay( Handle:timer, any:m_hData05 )
+{
+    ResetPack( m_hData05 );
+
+    new m_iVictim, m_iKiller;
+    m_iVictim = ReadPackCell( m_hData05 );
+    m_iKiller = ReadPackCell( m_hData05 );
+    
+    if ( IsValidClient( m_iVictim ) && IsValidClient( m_iKiller ) && IsPlayerAlive( m_iKiller ) ) // With the timer, the killer could die or disconnect, so we double-check.
+    {
+        DealDamage( m_iKiller, GetAttributeValueI( m_iVictim, _, m_bLastWill_ATTRIBUTE, m_iLastWill_Damage ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL );
+    }
+}
+
 // Super timer.
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
 // -
