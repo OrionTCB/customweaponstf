@@ -232,13 +232,13 @@ stock TF2_SetHealth(client, NewHealth)
 stock Float:TF2_GetClientUberLevel(client)
 {
     new entity = TF2_Medigun(client);
-    if (entity) return GetEntPropFloat(entity, Prop_Send, "m_flChargeLevel")*100.0;
+    if (IsValidEntity(entity) && IsValidEdict(entity)) return GetEntPropFloat(entity, Prop_Send, "m_flChargeLevel")*100.0;
     return 0.0;
 }
 stock TF2_SetClientUberLevel(client, Float:level)
 {
     new entity = TF2_Medigun(client);
-    if (entity) {
+    if (IsValidEntity(entity) && IsValidEdict(entity)) {
         if (level < 0.0) level = 0.0;
         if (level > 100.0) level = 100.0;
         SetEntPropFloat(entity, Prop_Send, "m_flChargeLevel", level / 100.0);
@@ -247,12 +247,12 @@ stock TF2_SetClientUberLevel(client, Float:level)
 stock TF2_ReleaseUbercharge(client)
 {
     new entity = TF2_Medigun(client);
-    if (entity) SetEntProp(entity, Prop_Send, "m_bChargeRelease", 1);
+    if (IsValidEntity(entity) && IsValidEdict(entity)) SetEntProp(entity, Prop_Send, "m_bChargeRelease", 1);
 }
 stock bool:TF2_IsUberchargeDeployed(client)
 {
     new entity = TF2_Medigun(client);
-    if (entity) {
+    if (IsValidEntity(entity) && IsValidEdict(entity)) {
         if (GetEntProp(entity, Prop_Send, "m_bChargeRelease") > 0) return true;
     }
     return false;
@@ -260,12 +260,12 @@ stock bool:TF2_IsUberchargeDeployed(client)
 stock TF2_StopUbercharge(client)
 {
     new entity = TF2_Medigun(client);
-    if (entity) SetEntProp(entity, Prop_Send, "m_bChargeRelease", 0);
+    if (IsValidEntity(entity) && IsValidEdict(entity)) SetEntProp(entity, Prop_Send, "m_bChargeRelease", 0);
 }
 stock TF2_Medigun(client)
 {
     new entity = GetPlayerWeaponSlot(client, 1);
-    if (entity > 0)
+    if (IsValidEntity(entity) && IsValidEdict(entity))
     {
         new String:strClassname[64];
         GetEntityNetClass(entity, strClassname, sizeof(strClassname));
@@ -502,6 +502,7 @@ stock RemoveMiniCrit(client)
 
 // ====[ MOVEMENT SPEED ]==============================================
 stock Float:GetClientMovementSpeed(client) return GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
+stock SetClientMovementSpeed(client, Float:value) return SetEntPropFloat(client, Prop_Send, "m_flMaxspeed", value);
 
 // ====[ VELOCITY ]====================================================
 stock GetVelocity(client, Float:vVector[3]) GetEntPropVector(client, Prop_Data, "m_vecVelocity", vVector);
