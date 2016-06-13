@@ -89,7 +89,7 @@ new Handle:g_hHudText_AW2;
 
 new bool:m_bMarkVictim_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flMarkVictim_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
-new m_iMarkVictim_MaximumStack[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iMarkVictim_MaximumVictim[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bMarkVictimForDeath_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flMarkVictimForDeath_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -546,17 +546,31 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
     {
-        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
+        new m_iWeapon          = TF2_GetClientActiveWeapon( m_iClient );
+        new Float:old_as       = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true );
+        new Float:old_r        = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true );
+        new Float:regen        = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true );
+        new Float:attack_speed = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true );
+
 
         static bool:snd1[MAXPLAYERS + 1] = false;
         static bool:snd2[MAXPLAYERS + 1] = false;
         static bool:snd3[MAXPLAYERS + 1] = false;
         static bool:snd4[MAXPLAYERS + 1] = false;
 
+
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100.0 ) snd1[m_iClient] = false;
-        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) snd2[m_iClient] = false;
-        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 300.0 ) snd3[m_iClient] = false;
+        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) {
+            snd2[m_iClient] = false;
+            TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
+        }
+        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 300.0 ) {
+            snd3[m_iClient] = false;
+            TF2Attrib_SetByName( m_iWeapon, "health regen", old_r );
+        }
+        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 ) 
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 400.0 ) snd4[m_iClient] = false;
+
 
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 100.0 && !snd1[m_iClient] )
         {
@@ -566,25 +580,15 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 )
         {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
             new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-            new Float:fValue = GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true );
 
-            TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", fValue );
-
-            if ( m_iSlot == 0 || m_iSlot == 1 ) {
-                if ( m_flAttackSpeed < 0.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.0 );
-            }
-            else if ( m_iSlot == 2 ) {
-                if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Scout ) {
-                    if ( m_flAttackSpeed < 0.392 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.392 );
-                } else if ( TF2_GetPlayerClass( m_iClient ) == TFClass_Spy ) {
-                    if ( m_flAttackSpeed < 0.001 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.001 );
-                } else {
-                    if ( m_flAttackSpeed < 0.245 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", 0.245 );
+            for ( new i = 0 ; i <= 2 ; i++ ) {
+                if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
+                    TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", attack_speed );
+                    AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
                 }
-                // If the fire rate is too fast, the animation won't allow you to land your attack.
             }
 
             if ( !snd2[m_iClient] )
@@ -596,9 +600,9 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 )
         {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "health regen" ) ) ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
-            TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
-            
+            if ( !( TF2Attrib_GetByName( m_iWeapon, "health regen" ) ) ) TF2Attrib_SetByName( m_iWeapon, "health regen", old_r );
+            TF2Attrib_SetByName( m_iWeapon, "health regen", regen );
+
             if ( !snd3[m_iClient] )
             {
                 snd3[m_iClient] = true;
@@ -621,26 +625,19 @@ ATTRIBUTE_ADDCONDALT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
     {
+        new id       = GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true );
+        new Float:hp = GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true );
+
         if ( GetEntProp( m_iClient, Prop_Send, "m_iStunFlags" ) ) return m_iButtons;
-        if ( !TF2_IsPlayerInCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ) ) )
+        if ( !TF2_IsPlayerInCondition( m_iClient, TFCond:id ) )
         {
-            if ( GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) >= 1.0 )
+            if ( GetClientHealth( m_iClient ) > hp && hp >= 1.0
+                || GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient ) * hp )
             {
-                if ( GetClientHealth( m_iClient ) > GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
-                {
-                    DealDamage( m_iClient, RoundToFloor( GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
+                DealDamage( m_iClient, ( hp >= 1.0 ? RoundToFloor( hp ) : RoundToFloor( TF2_GetClientMaxHealth( m_iClient ) * hp ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
 
-                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
-                    EmitSoundToClient( m_iClient, SOUND_READY );
-                }
-            } else {
-                if ( GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) )
-                {
-                    DealDamage( m_iClient, RoundToFloor( TF2_GetClientMaxHealth( m_iClient ) * GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_HealthPoints, true ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
-
-                    TF2_AddCondition( m_iClient, TFCond:GetAttributeValueI( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_iAddCondAltFire_ID, true ), GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
-                    EmitSoundToClient( m_iClient, SOUND_READY );
-                }
+                TF2_AddCondition( m_iClient, TFCond:id, GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
+                EmitSoundToClient( m_iClient, SOUND_READY );
             }
         }
     }
@@ -844,10 +841,15 @@ ATTRIBUTE_CHARGEDAIRBLAST( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         // If I do x *= value, it'll loop and de/increases indefinitly.
 
-        new ammo = GetCarriedAmmo( m_iClient, TFWeaponSlot_Primary );
-        if ( ammo < m_flAirblastCost ) return m_iButtons;
-
         static bool:m_bCharging[MAXPLAYERS + 1];
+
+        new ammo = GetCarriedAmmo( m_iClient, TFWeaponSlot_Primary );
+        if ( ammo < m_flAirblastCost )
+        {
+            if ( m_bCharging[m_iClient] ) StopSound( m_iClient, SNDCHAN_WEAPON, SOUND_CHARGE_STICKYBOMB );
+            m_bCharging[m_iClient] = false;
+            return m_iButtons;
+        }
 
         if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
         {
@@ -866,7 +868,7 @@ ATTRIBUTE_DISABLEALT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDisableAlt_ATTRIBUTE, true ) )
     {
-        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+10.0 );
+        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+2.0 );
     }
 
     return m_iButtons;
@@ -876,7 +878,7 @@ ATTRIBUTE_DISABLEPRIMARY( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDisablePrimAlt_ATTRIBUTE, true ) )
     {
-        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextPrimaryAttack", GetGameTime()+10.0 );
+        SetEntPropFloat( TF2_GetClientActiveWeapon( m_iClient ), Prop_Send, "m_flNextPrimaryAttack", GetGameTime()+2.0 );
     }
 
     return m_iButtons;
@@ -936,9 +938,9 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) )
     {
         if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) )
-            TF2Attrib_SetByName( m_iClient, "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
+            SetClientMovementSpeed( m_iClient, GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) * GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
         else
-            TF2Attrib_SetByName( m_iClient, "move speed bonus", GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
+            SetClientMovementSpeed( m_iClient, GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
     }
 
     return m_iButtons;
@@ -977,7 +979,7 @@ ATTRIBUTE_RAGEDRAIN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( m_hTimers[m_iClient][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && m_bBools[m_iClient][m_bDrainRage] )
         {
             new Float:m_flRage = GetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter" );
-            if ( m_flRage > 0.0 ) SetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter", m_flRage - GetAttributeValueF( m_iClient, _, m_bRageDecrease_ATTRIBUTE, m_flRageDecrease_Amount ) );
+            if ( m_flRage > 0.0 ) SetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter", m_flRage - ( GetAttributeValueF( m_iClient, _, m_bRageDecrease_ATTRIBUTE, m_flRageDecrease_Amount ) / 100.0 ) );
         }
     }
 
@@ -1042,9 +1044,6 @@ ATTRIBUTE_JUMPBONUS( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( bIsInJump[m_iClient] && m_iIntegers[m_iClient][m_iJumpAmount] > -1 ) SetEntData( m_iClient, m_iDashOffSet, 0 );
         if ( m_iIntegers[m_iClient][m_iJumpAmount] == 0 ) bIsInJump[m_iClient] = false;
     }
-    else {
-        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iJumpAmount] = 0;
-    }
 
     return m_iButtons;
 }
@@ -1056,6 +1055,21 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     }
     if ( HasAttribute( m_iClient, _, m_bMarkVictimForDeath_ATTRIBUTE ) ) {
         if ( m_iIntegers[m_iClient][m_iMarkedVictimForDeath] < 0 ) m_iIntegers[m_iClient][m_iMarkedVictimForDeath] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bMarkVictim_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iMarkedVictim] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bMarkVictimForDeath_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iMarkedVictimForDeath] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_flFloats[m_iClient][m_flDamageCharge] = 0.0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_flFloats[m_iClient][m_flTakeDamageCharge] = 0.0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bJumpBonus_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iJumpAmount] = 0;
     }
 
     if ( HasAttribute( m_iClient, _, m_bMiniMann_ATTRIBUTE ) ) {
@@ -1084,16 +1098,6 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new m_iLevel = RoundToFloor( m_flFloats[m_iClient][m_flTakeDamageCharge]/100.0 );
         if ( m_iLevel > 3 ) m_iLevel = 3;
         Format( m_strHUDLevelUpSystem_DamageReceived, sizeof( m_strHUDLevelUpSystem_DamageReceived ), "Upgrade %.0f%% [%i]", m_flFloats[m_iClient][m_flTakeDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 400 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
-
-        if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
-        {
-            new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
-
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldAttackSpeed, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 200.0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_AttackSpeed, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_OldHealthRegeneration, true ) );
-            if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 ) TF2Attrib_SetByName( m_iWeapon, "health regen", GetAttributeValueF( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_HealthRegeneration, true ) );
-        }
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE ) ) {
@@ -1211,7 +1215,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         new String:m_sValues[2][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
-        m_iMarkVictim_MaximumStack[m_iClient][m_iSlot]       = StringToInt( m_sValues[0] );
+        m_iMarkVictim_MaximumVictim[m_iClient][m_iSlot]      = StringToInt( m_sValues[0] );
         m_flMarkVictim_Duration[m_iClient][m_iSlot]          = StringToFloat( m_sValues[1] );
         m_bMarkVictim_ATTRIBUTE[m_iClient][m_iSlot]          = true;
         m_aAction = Plugin_Handled;
@@ -1631,7 +1635,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bMarkVictim_ATTRIBUTE[m_iClient][m_iSlot]              = false;
             m_flMarkVictim_Duration[m_iClient][m_iSlot]              = 0.0;
-            m_iMarkVictim_MaximumStack[m_iClient][m_iSlot]           = 0;
+            m_iMarkVictim_MaximumVictim[m_iClient][m_iSlot]           = 0;
 
             m_bMarkVictimForDeath_ATTRIBUTE[m_iClient][m_iSlot]      = false;
             m_flMarkVictimForDeath_Duration[m_iClient][m_iSlot]      = 0.0;
@@ -2145,8 +2149,8 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 300.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 200.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 2.25 );
                     else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 400.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 300.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 3.0 );
 
-                    if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 0.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 0.0;
                     if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] > 400.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 400.0;
+                    if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 0.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 0.0;
                 }
             //-//
                 if ( HasAttribute( m_iAttacker, _, m_bRespawnWhereYouDied_ATTRIBUTE ) )
@@ -2166,6 +2170,15 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     if ( m_flFloats[m_iAttacker][m_flElectroshock] > 100.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 100.0;
                     if ( m_flFloats[m_iAttacker][m_flElectroshock] < 0.0 ) m_flFloats[m_iAttacker][m_flElectroshock] = 0.0;
                 }
+            //-//
+                if ( HasAttribute( m_iAttacker, _, m_bRageDecrease_ATTRIBUTE ) )
+                {
+                    m_bBools[m_iAttacker][m_bDrainRage] = false;
+
+                    if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] );
+                    if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && GetEntPropFloat( m_iAttacker, Prop_Send, "m_flRageMeter" ) != 0.0 && !m_bBools[m_iAttacker][m_bDrainRage] )
+                        m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] = CreateTimer( 10.0, m_tRageDecrease, m_iAttacker );
+                }
             }
 
             if ( m_iWeapon != -1 )
@@ -2182,7 +2195,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                             s_bGlowEnabled[m_iVictim] = false;
                             m_iIntegers[m_iAttacker][m_iMarkedVictim]--;
                         }
-                        if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] == INVALID_HANDLE && !s_bGlowEnabled[m_iVictim] && m_iIntegers[m_iAttacker][m_iMarkedVictim] < m_iMarkVictim_MaximumStack[m_iAttacker][m_iSlot] )
+                        if ( m_hTimers[m_iVictim][m_hMarkVictim_TimerDuration] == INVALID_HANDLE && !s_bGlowEnabled[m_iVictim] && m_iIntegers[m_iAttacker][m_iMarkedVictim] < m_iMarkVictim_MaximumVictim[m_iAttacker][m_iSlot] )
                         {
                             m_iIntegers[m_iAttacker][m_iMarkedVictim]++;
                             SetEntProp( m_iVictim, Prop_Send, "m_bGlowEnabled", 1 );
@@ -2275,15 +2288,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     }
                     if ( m_iVictim != m_iAttacker )
                     {
-                        if ( m_bRageDecrease_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                        {
-                            m_bBools[m_iAttacker][m_bDrainRage] = false;
-
-                            if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] );
-                            if ( m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] == INVALID_HANDLE && GetEntPropFloat( m_iAttacker, Prop_Send, "m_flRageMeter" ) != 0.0 && !m_bBools[m_iAttacker][m_bDrainRage] )
-                                m_hTimers[m_iAttacker][m_hRageDecrease_TimerDelay] = CreateTimer( 10.0, m_tRageDecrease, m_iAttacker );
-                        }
-                    //-//
                         if ( m_bMissCauseDelay_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
                             if ( m_hTimers[m_iAttacker][m_hMissCauseDelay_TimerDuration] != INVALID_HANDLE )
@@ -2294,9 +2298,11 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                         {
                             new Float:m_flChargeMeter = GetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter" );
                             m_flChargeMeter += m_flDemoChargeOnHit_Charge[m_iAttacker][m_iSlot];
+
+                            SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", m_flChargeMeter );
                                     
-                            if ( m_flChargeMeter >= 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 100.0 );
-                            if ( m_flChargeMeter < 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", m_flChargeMeter );
+                            if ( m_flChargeMeter > 100.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 100.0 );
+                            if ( m_flChargeMeter < 0.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 0.0 );
                         }
                     //-//
                         if ( m_bPissYourselfOnMiss_ATTRIBUTE[m_iAttacker][m_iSlot] )
