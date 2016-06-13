@@ -865,9 +865,6 @@ ATTRIBUTE_ATTACKSPEEDONKILL( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             }
         }
     }
-    else if ( !HasAttribute( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE ) ) {
-        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iAttackSpeed] = 0;
-    }
 
     return m_iButtons;
 }
@@ -1207,6 +1204,12 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bMarkVictimDamage_ATTRIBUTE ) ) {
         if ( m_iIntegers[m_iClient][m_iMarkVictimDamage] < 0 ) m_iIntegers[m_iClient][m_iMarkVictimDamage] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bMarkVictimDamage_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iMarkVictimDamage] = 0;
+    }
+    if ( !HasAttribute( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE ) ) {
+        if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iAttackSpeed] = 0;
     }
 
     return m_iButtons;
@@ -2702,7 +2705,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
             if ( HasAttribute( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE ) && GetAttributeValueF( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_flDamageResHealthMissing_ResPctPerMissingHpPct ) * ( GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 < ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ? GetAttributeValueI( m_iVictim, _, m_bDamageResHealthMissing_ATTRIBUTE, m_iDamageResHealthMissing_MaxStackOfMissingHpPct ) + 0.0 : ( 1.0 - FloatDiv( GetClientHealth( m_iVictim ) + 0.0, TF2_GetClientMaxHealth( m_iVictim ) + 0.0 ) ) * 100.0 ) >= 100 )
                 m_flDamage = 0.0;
         //-//
-            if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) && m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) )
+            if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) && 1 + ( m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) ) <= 0.0 )
                 m_flDamage = 0.0;
         }
 
@@ -3042,7 +3045,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                 }
             //-//
                 if ( HasAttribute( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, true ) )
-                    m_flDamage *= ( 1+( m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) ) );
+                    m_flDamage *= ( 1 + ( m_iIntegers[m_iVictim][m_iHeatToo] * GetAttributeValueF( m_iVictim, _, m_bHeatDMGTaken_ATTRIBUTE, m_flHeatDMGTaken_DMG, true ) ) );
             }
         }
     }
