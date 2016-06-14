@@ -98,6 +98,7 @@ new m_iMarkVictimForDeath_MaximumStack[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bDisableSlot_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDisableSlot_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iDisableSlot_Slot[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iMinigunOffset;
 
 new bool:m_bDisarmSilent_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDisarmSilent_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -285,6 +286,7 @@ public OnPluginStart()
     }
 
     m_iDashOffSet = FindSendPropInfo( "CTFPlayer", "m_iAirDash" );
+    m_iMinigunOffset = FindSendPropInfo( "CTFMinigun", "m_iWeaponState" );
 
     HookEvent( "player_chargedeployed",      Event_ChargeDeployed );
     HookEvent( "post_inventory_application", Event_PostInventoryApplication );
@@ -2803,9 +2805,25 @@ stock bool:MakeSlotSleep( m_iClient, m_iAttacker, m_iSlot, Float:m_flTime = 1.0,
             
             m_bSlotDisabled[m_iClient][m_iSlot] = true;
 
-            if ( m_bSwitch ) {
-                if ( m_iSlot == 0 ) TF2_SetClientSlot( m_iClient, 2 );
-                else TF2_SetClientSlot( m_iClient, 0 );
+            if ( m_bSwitch && TF2_GetClientActiveWeapon( m_iClient ) == m_iWeapon ) {
+                if ( m_iSlot < 2 ) {
+                    if ( m_iSlot == 0 ) {
+                        TF2_RemoveCondition( m_iClient, TFCond_Slowed );
+                        TF2_RemoveCondition( m_iClient, TFCond_Zoomed );
+                        SetEntData( m_iWeapon, m_iMinigunOffset, 0, 4, false );
+                    }
+                    if ( IsValidEdict( GetPlayerWeaponSlot( m_iClient, 2 ) ) )
+                        TF2_SetClientSlot( m_iClient, 2 );
+                }
+                else {
+                    if ( IsValidEdict( GetPlayerWeaponSlot( m_iClient, 0 ) ) )
+                        TF2_SetClientSlot( m_iClient, 0 );
+                    else {
+                        if ( IsValidEdict( GetPlayerWeaponSlot( m_iClient, 1 ) ) )
+                            TF2_SetClientSlot( m_iClient, 1 );
+                    }
+                }
+                TF2_RemoveCondition( m_iClient, TFCond_Taunting );
             }
 
             new bool:m_bMiss = false;
