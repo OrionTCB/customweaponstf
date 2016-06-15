@@ -1160,6 +1160,7 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                         }
                         else if ( mode == 2 )
                         {
+                            // I just noticed that if someone with another type of banner comes near the attribute owner, he will also give that new buff to allies, a bit op but nice, I have no way of fixing it anyway.
                             if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Buffed ) ) TF2_AddCondition( i, TFCond_Buffed, 0.1 );
                             else if ( TF2_IsPlayerInCondition( m_iClient, TFCond_DefenseBuffed ) ) TF2_AddCondition( i, TFCond_DefenseBuffed, 0.1 );
                             else if ( TF2_IsPlayerInCondition( m_iClient, TFCond_RegenBuffed ) ) TF2_AddCondition( i, TFCond_RegenBuffed, 0.1 );
@@ -3757,6 +3758,7 @@ public OnEntityDestroyed( m_iEntity )
                         {
                             new bool:IsCrit = false;
                             if ( GetEntProp( m_iEnt, Prop_Send, "m_bCritical" ) ) IsCrit = true;
+                            // I don't think I will ever remove this, idk why, it has been here for so long.
                             if ( GetAttributeValueI( m_iOwner, _, m_bFragmentation_ATTRIBUTE, m_iFragmentation_Mode ) == 2 )
                                 SpawnBombz( m_iOwner, EntIndexToEntRef( m_iEnt ), IsCrit, GetAttributeValueI( m_iOwner, _, m_bFragmentation_ATTRIBUTE, m_iFragmentation_Amount ), GetAttributeValueF( m_iOwner, _, m_bFragmentation_ATTRIBUTE, m_flFragmentation_Damage ), GetAttributeValueF( m_iOwner, _, m_bFragmentation_ATTRIBUTE, m_flFragmentation_Radius ) );
                         }
