@@ -1,4 +1,4 @@
 # customweaponstf
 Repo of Orion's custom attributes.
 
-Spreadsheet : 50 / 155 attributes done [32.58%]
+Spreadsheet : 85 / 155 attributes done [54.83%]
