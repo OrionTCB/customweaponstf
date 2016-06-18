@@ -1083,7 +1083,7 @@ ATTRIBUTE_DEMOCHARGE_BLOCK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
         if ( m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
         {
-            if ( mode == 1 && GetClientHealth( m_iClient ) >= threshold || mode == 2 && GetClientHealth( m_iClient ) <= threshold )
+            if ( mode == 1 && GetClientHealth( m_iClient ) >= ( threshold * TF2_GetClientMaxHealth( m_iClient ) ) || mode == 2 && GetClientHealth( m_iClient ) <= ( threshold * TF2_GetClientMaxHealth( m_iClient ) ) )
             {
                 m_iButtons &= ~IN_ATTACK2;
                 return m_iButtons;
@@ -1160,10 +1160,9 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                         }
                         else if ( mode == 2 )
                         {
-                            // I just noticed that if someone with another type of banner comes near the attribute owner, he will also give that new buff to allies, a bit op but nice, I have no way of fixing it anyway.
-                            if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Buffed ) ) TF2_AddCondition( i, TFCond_Buffed, 0.1 );
-                            else if ( TF2_IsPlayerInCondition( m_iClient, TFCond_DefenseBuffed ) ) TF2_AddCondition( i, TFCond_DefenseBuffed, 0.1 );
-                            else if ( TF2_IsPlayerInCondition( m_iClient, TFCond_RegenBuffed ) ) TF2_AddCondition( i, TFCond_RegenBuffed, 0.1 );
+                            if ( id == 1 /*TF2_IsPlayerInCondition( m_iClient, TFCond_Buffed )*/ ) TF2_AddCondition( i, TFCond_Buffed, 0.25 );
+                            else if ( id == 2 /*TF2_IsPlayerInCondition( m_iClient, TFCond_DefenseBuffed )*/ ) TF2_AddCondition( i, TFCond_DefenseBuffed, 0.25 );
+                            else if ( id == 3 /*TF2_IsPlayerInCondition( m_iClient, TFCond_RegenBuffed )*/ ) TF2_AddCondition( i, TFCond_RegenBuffed, 0.25 );
                         }
                     }
                 }
@@ -3235,8 +3234,8 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     if ( m_bBANOnKillHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {
                         if ( m_iBANOnKillHit_HitOrKill[m_iAttacker][m_iSlot] == 1 ) {
-                            if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty custom's power !" );
-                            else if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 2 ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iAttacker][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty custom's power !", "Custom" );
+                            if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 1 ) KickClient( m_iVictim, "Your ass just got kicked by the mighty power of a custom weapon !" );
+                            else if ( m_iBANOnKillHit_KickOrBan[m_iAttacker][m_iSlot] == 2 ) BanClient( m_iVictim, m_iBANOnKillHit_Duration[m_iAttacker][m_iSlot], BANFLAG_AUTHID, "Custom", "Your ass just got banned by the mighty power of a custom weapon !", "Custom" );
                         }
                     }
                 //-//
