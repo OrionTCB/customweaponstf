@@ -697,7 +697,7 @@ ATTRIBUTE_INNERVITALITY( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             if ( GetClientHealth( m_iClient ) < TF2_GetClientMaxHealth( m_iClient ) )
             {
                 static Float:m_flRegenCharge[MAXPLAYERS + 1] = 0.0;
-                m_flRegenCharge[m_iClient] += ( ( ( GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_BaseRegen )/12.0 ) + ( TF2_GetClientMaxHealth( m_iClient ) * ( GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient )*GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthThreshold ) ? GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthHealAbove ) : GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthHealBelow ) ) ) ) * 0.0303 );
+                m_flRegenCharge[m_iClient] += ( ( ( GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_BaseRegen )/10.0 ) + ( TF2_GetClientMaxHealth( m_iClient ) * ( GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient )*GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthThreshold ) ? GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthHealAbove ) : GetAttributeValueF( m_iClient, _, m_bInnerVitality_ATTRIBUTE, m_flInnerVitality_HealthHealBelow ) ) ) ) * 0.0303 );
                 if ( m_flRegenCharge[m_iClient] >= 1.0 ) {
                     TF2_HealPlayer( m_iClient, m_flRegenCharge[m_iClient], 0.667 );
                     m_flRegenCharge[m_iClient] = 0.0;
@@ -2037,7 +2037,7 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
 // ====[ ON ENTITY CREATED ]===========================================
 public OnEntityCreated( m_iEntity, const String:m_strClassname[] ) // Thanks 11530 for Projectile Particles.
 {
-    if ( IsValidEntity( m_iEntity ) && IsValidEdict( m_iEntity ) )
+    if ( IsValidEntity( m_iEntity ) && IsValidEdict( m_iEntity ) && IsAProjectile( m_iEntity ) )
         SDKHook( m_iEntity, SDKHook_Spawn, OnEntitySpawned );
 }
 
