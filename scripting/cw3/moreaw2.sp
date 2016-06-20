@@ -61,6 +61,7 @@ enum
     m_flRespawn,
     m_flElectroshock,
     m_flElectroshockEngine,
+    m_flCloakSpeed,
     m_flFloat
 };
 new Float:m_flFloats[MAXPLAYERS + 1][m_flFloat];
@@ -197,7 +198,6 @@ new Float:m_flElectroshock_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bSpeedCloak_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flSpeedCloak_Multiplier[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flSpeedCloak_OldSpeed[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bDemoCharge_Ubercharge_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 
@@ -587,7 +587,7 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             new Float:m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
 
             for ( new i = 0 ; i <= 2 ; i++ ) {
-                if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
+                if ( HasAttribute( m_iClient, i, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
                     TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", attack_speed );
                     AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
                 }
@@ -634,9 +634,9 @@ ATTRIBUTE_ADDCONDALT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         if ( !TF2_IsPlayerInCondition( m_iClient, TFCond:id ) )
         {
             if ( GetClientHealth( m_iClient ) > hp && hp >= 1.0
-                || GetClientHealth( m_iClient ) > TF2_GetClientMaxHealth( m_iClient ) * hp )
+                || GetClientHealth( m_iClient ) > GetClientHealth( m_iClient ) * hp )
             {
-                DealDamage( m_iClient, ( hp >= 1.0 ? RoundToFloor( hp ) : RoundToFloor( TF2_GetClientMaxHealth( m_iClient ) * hp ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
+                DealDamage( m_iClient, ( hp >= 1.0 ? RoundToFloor( hp ) : RoundToFloor( GetClientHealth( m_iClient ) * hp ) ), m_iClient, TF_DMG_PREVENT_PHYSICS_FORCE );
 
                 TF2_AddCondition( m_iClient, TFCond:id, GetAttributeValueF( m_iClient, _, m_bAddCondAltFire_ATTRIBUTE, m_flAddCondAltFire_Duration, true ) );
                 EmitSoundToClient( m_iClient, SOUND_READY );
@@ -939,10 +939,15 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) )
     {
-        if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) )
-            SetClientMovementSpeed( m_iClient, GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) * GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
-        else
-            SetClientMovementSpeed( m_iClient, GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_OldSpeed ) );
+        if ( m_flFloats[m_iClient][m_flCloakSpeed] <= 0.0 ) m_flFloats[m_iClient][m_flCloakSpeed] = GetClientMovementSpeed( m_iClient );
+
+        if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) ) {
+            SetClientMovementSpeed( m_iClient, m_flFloats[m_iClient][m_flCloakSpeed] * GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
+        }
+        else {
+            SetClientMovementSpeed( m_iClient, m_flFloats[m_iClient][m_flCloakSpeed] );
+            m_flFloats[m_iClient][m_flCloakSpeed] = 0.0;
+        }
     }
 
     return m_iButtons;
@@ -1185,11 +1190,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "speed while cloaked" ) )
     {
-        new String:m_sValues[2][10];
-        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
-
-        m_flSpeedCloak_Multiplier[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
-        m_flSpeedCloak_OldSpeed[m_iClient][m_iSlot]          = StringToFloat( m_sValues[1] );
+        m_flSpeedCloak_Multiplier[m_iClient][m_iSlot]        = StringToFloat( m_sValue );
         m_bSpeedCloak_ATTRIBUTE[m_iClient][m_iSlot]          = true;
         m_aAction = Plugin_Handled;
     }
@@ -1313,7 +1314,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
-    /* Weapon Level Up 2 [receieved]
+    /* Weapon Level Up 2 [received]
      *
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "weapon lvlup 2" ) )
@@ -1582,7 +1583,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
     /* Democharge On Hit
      *
      * ---------------------------------------------------------------------- */
-    else if ( StrEqual( m_sAttribute, "democharge on hit" ) ) // Volvo did it, BUT, I'm pretty sure it doesn't support 'minus' values, just like add uber on hit.
+    else if ( StrEqual( m_sAttribute, "democharge on hit" ) ) // Volvo did it, BUT, I'm pretty sure it doesn't support 'negatives' values, just like add uber on hit.
     {
         m_flDemoChargeOnHit_Charge[m_iClient][m_iSlot]   = StringToFloat( m_sValue );
         m_bDemoChargeOnHit_ATTRIBUTE[m_iClient][m_iSlot] = true;
@@ -1744,7 +1745,6 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bSpeedCloak_ATTRIBUTE[m_iClient][m_iSlot]                      = false;
             m_flSpeedCloak_Multiplier[m_iClient][m_iSlot]                    = 0.0;
-            m_flSpeedCloak_OldSpeed[m_iClient][m_iSlot]                      = 0.0;
 
             m_bDemoCharge_Ubercharge_ATTRIBUTE[m_iClient][m_iSlot]           = false;
 
