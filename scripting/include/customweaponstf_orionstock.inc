@@ -1017,3 +1017,28 @@ stock AttackSpeedLimit( client, weapon, slot, Float:attack_speed )
         }
     }
 }
+stock bool:IsAProjectile( entity )
+{
+    if ( IsValidEdict( entity ) )
+    {
+        char classname[32];
+        GetEdictClassname( entity, classname, sizeof( classname ) );
+        if ( StrEqual( classname, "tf_projectile_arrow" )
+            || StrEqual( classname, "tf_projectile_ball_ornament" )
+            || StrEqual( classname, "tf_projectile_energy_ball" )
+            || StrEqual( classname, "tf_projectile_energy_ring" )
+            || StrEqual( classname, "tf_projectile_cleaver" )
+            || StrEqual( classname, "tf_projectile_flare" )
+            || StrEqual( classname, "tf_projectile_grapplinghook" )
+            || StrEqual( classname, "tf_projectile_healing_bolt" )
+            || StrEqual( classname, "tf_projectile_pipe" )
+            || StrEqual( classname, "tf_projectile_pipe_remote" )
+            || StrEqual( classname, "tf_projectile_rocket" )
+            || StrEqual( classname, "tf_projectile_stun_ball" )
+            || StrEqual( classname, "tf_projectile_syringe" ) )
+        {
+            return true;
+        }
+    }
+    return false;
+}
