@@ -289,6 +289,7 @@ public OnPluginStart()
     m_iMinigunOffset = FindSendPropInfo( "CTFMinigun", "m_iWeaponState" );
 
     HookEvent( "player_chargedeployed",      Event_ChargeDeployed );
+    HookEvent( "player_changeclass",         Event_ChangeClass );
     HookEvent( "post_inventory_application", Event_PostInventoryApplication );
 
     HookEvent( "player_death",           Event_Death,          EventHookMode_Pre );
