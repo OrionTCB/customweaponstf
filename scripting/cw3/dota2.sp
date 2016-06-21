@@ -180,6 +180,7 @@ new Float:m_flEvasion_Chance[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bEvasionAW2_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flEvasionAW2_Add[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flEvasionAW2_Removal[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flEvasionAW2_RemovalMelee[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iEvasionAW2_Melee[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iEvasionAW2_PoA[MAXPLAYERS + 1][MAXSLOTS + 1];
 
@@ -926,14 +927,15 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "evasiveness on hit" ) )
     {
-        new String:m_sValues[4][10];
+        new String:m_sValues[5][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
-        m_flEvasionAW2_Add[m_iClient][m_iSlot]       = StringToFloat( m_sValues[0] );
-        m_flEvasionAW2_Removal[m_iClient][m_iSlot]   = StringToFloat( m_sValues[1] );
-        m_iEvasionAW2_Melee[m_iClient][m_iSlot]      = StringToInt( m_sValues[2] );
-        m_iEvasionAW2_PoA[m_iClient][m_iSlot]        = StringToInt( m_sValues[3] );
-        m_bEvasionAW2_ATTRIBUTE[m_iClient][m_iSlot]  = true;
+        m_flEvasionAW2_Add[m_iClient][m_iSlot]          = StringToFloat( m_sValues[0] );
+        m_flEvasionAW2_Removal[m_iClient][m_iSlot]      = StringToFloat( m_sValues[1] );
+        m_flEvasionAW2_RemovalMelee[m_iClient][m_iSlot] = StringToFloat( m_sValues[2] );
+        m_iEvasionAW2_Melee[m_iClient][m_iSlot]         = StringToInt( m_sValues[3] );
+        m_iEvasionAW2_PoA[m_iClient][m_iSlot]           = StringToInt( m_sValues[4] );
+        m_bEvasionAW2_ATTRIBUTE[m_iClient][m_iSlot]     = true;
         m_aAction = Plugin_Handled;
     }
     /* Fervor
@@ -1348,6 +1350,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bEvasionAW2_ATTRIBUTE[m_iClient][m_iSlot]        = false;
             m_flEvasionAW2_Add[m_iClient][m_iSlot]             = 0.0;
+            m_flEvasionAW2_RemovalMelee[m_iClient][m_iSlot]    = 0.0;
             m_flEvasionAW2_Removal[m_iClient][m_iSlot]         = 0.0;
             m_iEvasionAW2_Melee[m_iClient][m_iSlot]            = 0;
             m_iEvasionAW2_PoA[m_iClient][m_iSlot]  = 0;
@@ -1463,9 +1466,11 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                         if ( eaw2 == 0 || HasAttribute( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE, true ) && eaw2 == 1 )
                             evasion *= ( 1 - m_flFloats[m_iVictim][m_flEvasionChance_AW2] );
 
-                        if ( m_iWeapon != GetPlayerWeaponSlot( m_iAttacker, TFWeaponSlot_Melee ) || m_iWeapon == GetPlayerWeaponSlot( m_iAttacker, TFWeaponSlot_Melee ) && GetAttributeValueI( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE, m_iEvasionAW2_Melee ) == 1 )
+                        if ( m_iWeapon != GetPlayerWeaponSlot( m_iAttacker, TFWeaponSlot_Melee ) )
                             m_flFloats[m_iVictim][m_flEvasionChance_AW2] -= GetAttributeValueF( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE, m_flEvasionAW2_Removal );
-                        if ( m_flFloats[m_iVictim][m_flEvasionChance_AW2] < 0.0 ) m_flFloats[m_iVictim][m_flEvasionChance_AW2] = 0.0;
+                        if ( m_iWeapon == GetPlayerWeaponSlot( m_iAttacker, TFWeaponSlot_Melee ) && GetAttributeValueI( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE, m_iEvasionAW2_Melee ) == 1 )
+                            m_flFloats[m_iVictim][m_flEvasionChance_AW2] -= GetAttributeValueF( m_iVictim, _, m_bEvasionAW2_ATTRIBUTE, m_flEvasionAW2_RemovalMelee );
+                        if ( m_flFloats[m_iVictim][m_flEvasionChance_AW2] < 0.0 )m_flFloats[m_iVictim][m_flEvasionChance_AW2] = 0.0;
                     }
 
                     evasion = 1 - evasion;
