@@ -122,6 +122,12 @@ new Float:m_flMiniCritDisguisedCLOSERANGE_Range[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bCritDisguisedCLOSERANGE_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flCritDisguisedCLOSERANGE_Range[MAXPLAYERS + 1][MAXSLOTS + 1];
 
+new bool:m_bExplosiveCriticalDamage_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flExplosiveCriticalDamage_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flExplosiveCriticalDamage_Force[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flExplosiveCriticalDamage_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iExplosiveCriticalDamage_DamageMode[MAXPLAYERS + 1][MAXSLOTS + 1];
+
 
     /* On Attack
      * ---------------------------------------------------------------------- */
@@ -130,11 +136,13 @@ new bool:m_bSniperCombo_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flSniperCombo_DMGA[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flSniperCombo_DMGB[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flSniperCombo_DMGC[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iSniperCombo_Miss[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bPyroCombo_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flPyroCombo_DMGA[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flPyroCombo_DMGB[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flPyroCombo_DMGC[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iPyroCombo_Miss[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bPissYourselfOnMiss_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 
@@ -163,12 +171,6 @@ new Float:m_flExplosiveDamage_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveDamage_Force[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveDamage_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iExplosiveDamage_DamageMode[MAXPLAYERS + 1][MAXSLOTS + 1];
-
-new bool:m_bExplosiveCriticalDamage_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flExplosiveCriticalDamage_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flExplosiveCriticalDamage_Force[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flExplosiveCriticalDamage_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
-new m_iExplosiveCriticalDamage_DamageMode[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bLevelUpSystem_DamageDone_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flLevelUpSystem_DamageDone_BonusDamage[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -263,6 +265,7 @@ new Float:m_flDeployUbercharge_Threshold[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bBonkHealth_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flBonkHealth_Cooldown[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flBonkHealth_Heal[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iBonkHealth_KnockBackRes[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flBonkHealth_OverHealBonusCap[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 
@@ -315,7 +318,6 @@ public OnClientPutInServer( m_iClient )
 {
     SDKHook( m_iClient, SDKHook_OnTakeDamage, OnTakeDamage );
     SDKHook( m_iClient, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive );
-    SDKHook( m_iClient, SDKHook_OnTakeDamagePost, OnTakeDamagePost );
     SDKHook( m_iClient, SDKHook_PreThink, OnClientPreThink );
 }
 
@@ -560,6 +562,7 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         static bool:snd2[MAXPLAYERS + 1] = false;
         static bool:snd3[MAXPLAYERS + 1] = false;
         static bool:snd4[MAXPLAYERS + 1] = false;
+        static bool:snd5[MAXPLAYERS + 1] = false;
 
 
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100.0 ) snd1[m_iClient] = false;
@@ -573,6 +576,10 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 300.0 ) 
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 400.0 ) snd4[m_iClient] = false;
+        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] < 500.0 ) {
+            snd5[m_iClient] = false;
+            TF2Attrib_RemoveByName( m_iWeapon, "attack projectiles" );
+        }
 
 
         if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 100.0 && !snd1[m_iClient] )
@@ -618,6 +625,17 @@ ATTRIBUTE_DAMAGERECEIVED( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             snd4[m_iClient] = true;
             EmitSoundToClient( m_iClient, SOUND_LVLUP4, _, _, _, _, 1.0 );
             TF2_AddCondition( m_iClient, TFCond_DefenseBuffMmmph, 2.0 ); 
+        }
+        if ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 500.0 )
+        {
+            TF2Attrib_SetByName( m_iWeapon, "attack projectiles", 1.0 );
+
+            if ( !snd5[m_iClient] )
+            {
+                snd5[m_iClient] = true;
+                EmitSoundToClient( m_iClient, SOUND_LVLUP4, _, _, _, _, 1.0 );
+                TF2_AddCondition( m_iClient, TFCond_DefenseBuffMmmph, 2.0 ); 
+            }
         }
     }
 
@@ -921,6 +939,7 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {    
             if ( m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] == INVALID_HANDLE && m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] == INVALID_HANDLE && GetEntityFlags( m_iClient ) & FL_ONGROUND )
             {
+                if ( GetAttributeValueI( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_iBonkHealth_KnockBackRes, true ) == 1 ) TF2_AddCondition( m_iClient, TFCond_DefenseBuffMmmph, 0.25 );
                 m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] = CreateTimer( 1.2, m_tBonkHealth_Delay, m_iClient );
                 m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown, true )+1.2, m_tBonkHealth, m_iClient );
             }
@@ -1104,8 +1123,8 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
         new m_iLevel = RoundToFloor( m_flFloats[m_iClient][m_flTakeDamageCharge]/100.0 );
-        if ( m_iLevel > 3 ) m_iLevel = 3;
-        Format( m_strHUDLevelUpSystem_DamageReceived, sizeof( m_strHUDLevelUpSystem_DamageReceived ), "Upgrade %.0f%% [%i]", m_flFloats[m_iClient][m_flTakeDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 400 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
+        if ( m_iLevel > 4 ) m_iLevel = 4;
+        Format( m_strHUDLevelUpSystem_DamageReceived, sizeof( m_strHUDLevelUpSystem_DamageReceived ), "Upgrade %.0f%% [%i]", m_flFloats[m_iClient][m_flTakeDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 500 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE ) ) {
@@ -1248,7 +1267,7 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_flExplosiveDamage_Force[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
         m_flExplosiveDamage_Radius[m_iClient][m_iSlot]       = StringToFloat( m_sValues[1] );
         m_flExplosiveDamage_Damage[m_iClient][m_iSlot]       = StringToFloat( m_sValues[2] );
-        m_iExplosiveDamage_DamageMode[m_iClient][m_iSlot]   = StringToInt( m_sValues[3] );
+        m_iExplosiveDamage_DamageMode[m_iClient][m_iSlot]    = StringToInt( m_sValues[3] );
         m_bExplosiveDamage_ATTRIBUTE[m_iClient][m_iSlot]     = true;
         m_aAction = Plugin_Handled;
     }
@@ -1414,12 +1433,13 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "bonk health" ) )
     {
-        new String:m_sValues[3][10];
+        new String:m_sValues[4][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flBonkHealth_Heal[m_iClient][m_iSlot]              = StringToFloat( m_sValues[0] );
         m_flBonkHealth_Cooldown[m_iClient][m_iSlot]          = StringToFloat( m_sValues[1] );
-        m_flBonkHealth_OverHealBonusCap[m_iClient][m_iSlot]  = StringToFloat( m_sValues[2] );
+        m_iBonkHealth_KnockBackRes[m_iClient][m_iSlot]       = StringToInt( m_sValues[2] );
+        m_flBonkHealth_OverHealBonusCap[m_iClient][m_iSlot]  = StringToFloat( m_sValues[3] );
         m_bBonkHealth_ATTRIBUTE[m_iClient][m_iSlot]          = true;
         m_aAction = Plugin_Handled;
     }
@@ -1510,12 +1530,13 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "meet the sniper combo" ) )
     {
-        new String:m_sValues[3][10];
+        new String:m_sValues[4][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flSniperCombo_DMGA[m_iClient][m_iSlot]     = StringToFloat( m_sValues[0] );
         m_flSniperCombo_DMGB[m_iClient][m_iSlot]     = StringToFloat( m_sValues[1] );
         m_flSniperCombo_DMGC[m_iClient][m_iSlot]     = StringToFloat( m_sValues[2] );
+        m_iSniperCombo_Miss[m_iClient][m_iSlot]      = StringToInt( m_sValues[3] );
         m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
@@ -1524,12 +1545,13 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "meet the pyro combo" ) )
     {
-        new String:m_sValues[3][10];
+        new String:m_sValues[4][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flPyroCombo_DMGA[m_iClient][m_iSlot]       = StringToFloat( m_sValues[0] );
         m_flPyroCombo_DMGB[m_iClient][m_iSlot]       = StringToFloat( m_sValues[1] );
         m_flPyroCombo_DMGC[m_iClient][m_iSlot]       = StringToFloat( m_sValues[2] );
+        m_iPyroCombo_Miss[m_iClient][m_iSlot]        = StringToInt( m_sValues[3] );
         m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot]   = true;
         m_aAction = Plugin_Handled;
     }
@@ -1639,7 +1661,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bMarkVictim_ATTRIBUTE[m_iClient][m_iSlot]              = false;
             m_flMarkVictim_Duration[m_iClient][m_iSlot]              = 0.0;
-            m_iMarkVictim_MaximumVictim[m_iClient][m_iSlot]           = 0;
+            m_iMarkVictim_MaximumVictim[m_iClient][m_iSlot]          = 0;
 
             m_bMarkVictimForDeath_ATTRIBUTE[m_iClient][m_iSlot]      = false;
             m_flMarkVictimForDeath_Duration[m_iClient][m_iSlot]      = 0.0;
@@ -1678,11 +1700,13 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flSniperCombo_DMGA[m_iClient][m_iSlot]             = 0.0;
             m_flSniperCombo_DMGB[m_iClient][m_iSlot]             = 0.0;
             m_flSniperCombo_DMGC[m_iClient][m_iSlot]             = 0.0;
+            m_iSniperCombo_Miss[m_iClient][m_iSlot]              = 0;
 
             m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot]           = false;
             m_flPyroCombo_DMGA[m_iClient][m_iSlot]               = 0.0;
             m_flPyroCombo_DMGB[m_iClient][m_iSlot]               = 0.0;
             m_flPyroCombo_DMGC[m_iClient][m_iSlot]               = 0.0;
+            m_iPyroCombo_Miss[m_iClient][m_iSlot]                = 0;
 
             m_bPissYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot]  = false;
 
@@ -1810,6 +1834,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bBonkHealth_ATTRIBUTE[m_iClient][m_iSlot]          = false;
             m_flBonkHealth_Cooldown[m_iClient][m_iSlot]          = 0.0;
             m_flBonkHealth_Heal[m_iClient][m_iSlot]              = 0.0;
+            m_iBonkHealth_KnockBackRes[m_iClient][m_iSlot]       = 0;
             m_flBonkHealth_OverHealBonusCap[m_iClient][m_iSlot]  = 0.0;
 
 
@@ -1836,11 +1861,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
             && m_iAttacker != m_iVictim
             && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim ) )
         {
-            if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 && GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance, true ) == 0.0 ) {
-                if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
-                    m_flDamage = 0.0;
-            }
-
             if ( m_flDamage >= 1.0 )
             {
                 if ( HasAttribute( m_iVictim, _, m_bElectroshock_ATTRIBUTE ) )
@@ -1983,11 +2003,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                             }
                         }
                     //-//
-                        if ( m_bNonCriticalDamageModifier_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                        {
-                            if ( !( m_iType & TF_DMG_CRIT ) && !IsCritBoosted( m_iAttacker ) ) m_flDamage *= m_flNonCriticalDamageModifier_Multiplier[m_iAttacker][m_iSlot];
-                        }
-                    //-//
                         if ( m_bSniperCombo_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
                             m_bBools[m_iAttacker][m_bSniperCombo] = true;
@@ -2094,9 +2109,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     }
                 }
 
-                if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 ) {
-                    if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) ) m_flDamage *= GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance );
-                }
                 if ( HasAttribute( m_iVictim, _, m_bMetalShield_ATTRIBUTE ) )
                 {
                     new metal = TF2_GetClientMetal( m_iVictim );
@@ -2144,6 +2156,11 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
             //-//
                 if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) )
                 {
+                    if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 && GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance, true ) == 0.0 ) {
+                        if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
+                            m_flDamage = 0.0;
+                    }
+
                     new Float:m_flValue;
                     m_flValue = m_flDamage * GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_Charge ) * 0.01;
 
@@ -2151,8 +2168,9 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 200.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 100.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 1.5 );
                     else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 300.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 200.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 2.25 );
                     else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 400.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 300.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 3.0 );
+                    else if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 500.0 && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] += ( m_flValue / 3.75 );
 
-                    if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] > 400.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 400.0;
+                    if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] > 500.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 500.0;
                     if ( m_flFloats[m_iVictim][m_flTakeDamageCharge] < 0.0 ) m_flFloats[m_iVictim][m_flTakeDamageCharge] = 0.0;
                 }
             //-//
@@ -2349,6 +2367,95 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                             if ( m_flFloats[m_iAttacker][m_flTakeDamageCharge] >= 100.0 )
                                 TF2_HealPlayer( m_iAttacker, m_flDamage * m_flLevelUpSystem_DamageReceived_Lifesteal[m_iAttacker][m_iSlot], 1.0, true );
                         }
+                        if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
+                        {
+                            if ( m_bExplosiveCriticalDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            {
+                                new particle = CreateEntityByName( "info_particle_system" );
+                                if ( IsValidEntity( particle ) )
+                                {
+                                    TeleportEntity( particle, m_flPosition, NULL_VECTOR, NULL_VECTOR );
+                                    DispatchKeyValue( particle, "effect_name", "ExplosionCore_MidAir" );
+                                    DispatchSpawn( particle );
+                                    ActivateEntity( particle );
+                                    AcceptEntityInput( particle, "start" );
+                                    SetVariantString( "OnUser1 !self:Kill::8:-1" );
+                                    AcceptEntityInput( particle, "AddOutput" );
+                                    AcceptEntityInput( particle, "FireUser1" );
+                                        
+                                    if ( m_flFloats[m_iAttacker][m_flExplosionSound] < GetEngineTime() - 0.1 )
+                                    {
+                                        new m_iRandom = GetRandomInt( 0, sizeof( g_strSoundExplosionBox )-1 );
+                                        EmitSoundFromOrigin( g_strSoundExplosionBox[m_iRandom], m_flPosition );
+                                        m_flFloats[m_iAttacker][m_flExplosionSound] = GetEngineTime();
+                                    }
+                                }
+                                    
+                                if ( m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
+                                {
+                                    NormalizeVector( m_flForce, m_flForce );
+                                    if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
+                                    
+                                    new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
+                                    if ( fScale < 175.0 ) fScale = 175.0;
+                                    if ( fScale > 1750.0 ) fScale = 1750.0;
+                                    ScaleVector( m_flForce, fScale );
+                                    if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
+                                        
+                                    decl Float:vClientVelocity[3];
+                                    GetVelocity( m_iVictim, vClientVelocity );
+                                    AddVectors( vClientVelocity, m_flForce, vClientVelocity );
+                                    TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
+                                }
+
+                                new Float:flPos1[3];
+                                GetClientEyePosition( m_iVictim, flPos1 );
+                                    
+                                for ( new i = 1; i <= MaxClients; i++ )
+                                {
+                                    if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
+                                    {
+                                        if ( !HasInvulnerabilityCond( i ) )
+                                        {
+                                            new Float:flPos2[3];
+                                            GetClientEyePosition( i, flPos2 );
+                                                
+                                            new Float:distance = GetVectorDistance( flPos1, flPos2 );
+                                            if ( distance <= m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] )
+                                            {
+                                                decl Handle:m_hSee;
+                                                ( m_hSee = INVALID_HANDLE );
+
+                                                m_hSee = TR_TraceRayFilterEx( flPos1, flPos2, MASK_SOLID, RayType_EndPoint, TraceFilterPlayer, m_iVictim );
+                                                if ( m_hSee != INVALID_HANDLE )
+                                                {
+                                                    if ( !TR_DidHit( m_hSee ) )
+                                                    {
+                                                        // Limit the minimum damage to 50%
+                                                        // Begin the reduction at 73.0 HU.
+                                                        new Float:dmg_reduction = 1.0;
+                                                        if ( distance >= 73.0 )
+                                                            dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
+                                
+                                                        DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
+                                                    }
+                                                }
+
+                                                CloseHandle( m_hSee );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if ( HasAttribute( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, true ) && m_flFloats[m_iVictim][m_flTakeDamageCharge] >= 400.0 ) {
+                                m_flDamage *= GetAttributeValueF( m_iVictim, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE, m_flLevelUpSystem_DamageReceived_CriticalDamageResistance );
+                            }
+                        }
+                    //-//
+                        if ( m_bNonCriticalDamageModifier_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( !( m_iType & TF_DMG_CRIT ) && !IsCritBoosted( m_iAttacker ) ) m_flDamage *= m_flNonCriticalDamageModifier_Multiplier[m_iAttacker][m_iSlot];
+                        }
                     }
                 }
             }
@@ -2358,109 +2465,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 
     m_aAction = Plugin_Changed;
     return m_aAction;
-}
-
-// ====[ ON TAKE DAMAGE POST ]=========================================
-public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage, m_iType, m_iWeapon, Float:m_flForce[3], Float:m_flPosition[3] )
-{
-    if ( m_flDamage >= 1.0
-        && IsValidClient( m_iAttacker ) )
-    {
-        if ( IsValidClient( m_iVictim )
-            && !HasInvulnerabilityCond( m_iVictim )
-            && m_iAttacker != m_iVictim 
-            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim )
-            && m_iWeapon != -1 )
-        {
-            if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
-            {
-                new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
-                if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_bExplosiveCriticalDamage_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                    {
-                        new particle = CreateEntityByName( "info_particle_system" );
-                        if ( IsValidEntity( particle ) )
-                        {
-                            TeleportEntity( particle, m_flPosition, NULL_VECTOR, NULL_VECTOR );
-                            DispatchKeyValue( particle, "effect_name", "ExplosionCore_MidAir" );
-                            DispatchSpawn( particle );
-                            ActivateEntity( particle );
-                            AcceptEntityInput( particle, "start" );
-                            SetVariantString( "OnUser1 !self:Kill::8:-1" );
-                            AcceptEntityInput( particle, "AddOutput" );
-                            AcceptEntityInput( particle, "FireUser1" );
-                            
-                            if ( m_flFloats[m_iAttacker][m_flExplosionSound] < GetEngineTime() - 0.1 )
-                            {
-                                new m_iRandom = GetRandomInt( 0, sizeof( g_strSoundExplosionBox )-1 );
-                                EmitSoundFromOrigin( g_strSoundExplosionBox[m_iRandom], m_flPosition );
-                                m_flFloats[m_iAttacker][m_flExplosionSound] = GetEngineTime();
-                            }
-                        }
-                        
-                        if ( m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot] >= 1.0 )
-                        {
-                            NormalizeVector( m_flForce, m_flForce );
-                            if ( m_flForce[2] < 0.2 ) m_flForce[2] = 0.2;
-                            
-                            new Float:fScale = ( m_flDamage * 3.0 ) * m_flExplosiveCriticalDamage_Force[m_iAttacker][m_iSlot];
-                            if ( fScale < 175.0 ) fScale = 175.0;
-                            if ( fScale > 1750.0 ) fScale = 1750.0;
-                            ScaleVector( m_flForce, fScale );
-                            if ( m_flForce[2] < 555.0 && m_flDamage >= 30.0 ) m_flForce[2] = 555.0;
-                            
-                            decl Float:vClientVelocity[3];
-                            GetVelocity( m_iVictim, vClientVelocity );
-                            AddVectors( vClientVelocity, m_flForce, vClientVelocity );
-                            TeleportEntity( m_iVictim, NULL_VECTOR, NULL_VECTOR, vClientVelocity );
-                        }
-
-                        new Float:flPos1[3];
-                        GetClientEyePosition( m_iVictim, flPos1 );
-                        
-                        for ( new i = 1; i <= MaxClients; i++ )
-                        {
-                            if ( i != m_iAttacker && IsClientInGame( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) != GetClientTeam( m_iAttacker ) )
-                            {
-                                if ( !HasInvulnerabilityCond( i ) )
-                                {
-                                    new Float:flPos2[3];
-                                    GetClientEyePosition( i, flPos2 );
-                                        
-                                    new Float:distance = GetVectorDistance( flPos1, flPos2 );
-                                    if ( distance <= m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] )
-                                    {
-                                        decl Handle:m_hSee;
-                                        ( m_hSee = INVALID_HANDLE );
-
-                                        m_hSee = TR_TraceRayFilterEx( flPos1, flPos2, MASK_SOLID, RayType_EndPoint, TraceFilterPlayer, m_iVictim );
-                                        if ( m_hSee != INVALID_HANDLE )
-                                        {
-                                            if ( !TR_DidHit( m_hSee ) )
-                                            {
-                                                // Limit the minimum damage to 50%
-                                                // Begin the reduction at 73.0 HU.
-                                                new Float:dmg_reduction = 1.0;
-                                                if ( distance >= 73.0 )
-                                                    dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
-                    
-                                                DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
-                                            }
-                                        }
-
-                                        CloseHandle( m_hSee );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return;
 }
 
 // ====[ CALC IS ATTACK CRITICAL ]=====================================
@@ -2473,7 +2477,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
         new m_iSlot = TF2_GetWeaponSlot( m_iClient, m_iWeapon );
         if ( m_iSlot != -1 && m_bHasAttribute[m_iClient][m_iSlot] )
         {
-            if ( m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot] && m_iSniperCombo_Miss[m_iClient][m_iSlot] == 1 )
             {
                 if ( m_iIntegers[m_iClient][m_iSniperComboHit] > 0 ) {
                     m_bBools[m_iClient][m_bSniperCombo] = false;
@@ -2499,7 +2503,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
                 m_bBools[m_iClient][m_bLastWasMiss] = false;
             }
         //-//
-            if ( m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot] && m_iPyroCombo_Miss[m_iClient][m_iSlot] == 1 )
             {
                 if ( m_iIntegers[m_iClient][m_iPyroComboHit] > 0 ) {
                     m_bBools[m_iClient][m_bPyroCombo] = false;
