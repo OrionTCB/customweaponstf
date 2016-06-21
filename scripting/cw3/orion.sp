@@ -511,7 +511,6 @@ public OnClientPutInServer( m_iClient )
 {
     SDKHook( m_iClient, SDKHook_OnTakeDamage,      OnTakeDamage );
     SDKHook( m_iClient, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive );
-    SDKHook( m_iClient, SDKHook_OnTakeDamagePost,  OnTakeDamagePost );
     SDKHook( m_iClient, SDKHook_PreThink,          OnClientPreThink );
 }
 
@@ -3187,6 +3186,37 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
                 if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
                 {
+                    if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
+                    {
+                        if ( m_bStunOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
+                            {
+                                new Float:duration = m_flStunOnCrit_Duration[m_iAttacker][m_iSlot];
+                                if ( m_iStunOnCrit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
+                                        
+                                TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
+                                EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.25 );
+                                EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
+                            }
+                        }
+                    //-//
+                        if ( m_bHotSauceOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            new type = m_iHotSauceOnCrit_Type[m_iAttacker][m_iSlot];
+
+                            if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
+                            {
+                                    new Handle:m_hData01 = CreateDataPack();
+                                    CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
+                                    WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
+                                    WritePackCell( m_hData01, m_iVictim );
+                                    WritePackCell( m_hData01, m_iAttacker );
+                                    WritePackCell( m_hData01, type );
+                                    m_iIntegers[m_iVictim][m_iHotSauceType] = type;
+                            }
+                        }
+                    }
                     if ( m_bHotSauceOnHit_ATTRIBUTE[m_iAttacker][m_iSlot] )
                     {   
                         new type = m_iHotSauceOnHit_Type[m_iAttacker][m_iSlot];
@@ -3325,6 +3355,38 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 
                     if ( m_iVictim != m_iAttacker )
                     {
+                        if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
+                        {
+                            if ( m_bDrainUberchargeOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
+                            {
+                                new Float:pct = m_flDrainUberchargeOnCrit_Percentage[m_iAttacker][m_iSlot];
+                                new Float:m_flAttackerUbercharge = TF2_GetClientUberLevel( m_iAttacker );
+                                new Float:m_flVictimUbercharge = TF2_GetClientUberLevel( m_iVictim );
+
+                                if ( m_flVictimUbercharge > 0.0 && m_flAttackerUbercharge < 100.0 )
+                                {
+                                    if ( m_flVictimUbercharge >= ( pct * 100.0 ) )
+                                    {
+                                        if ( m_flAttackerUbercharge > ( 100.0 - ( pct * 100.0 ) ) )
+                                        {
+                                            m_flVictimUbercharge -= ( 100.0 - m_flAttackerUbercharge );
+                                            TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
+
+                                            TF2_SetClientUberLevel( m_iAttacker, 100.0 );
+                                        } else {
+                                            m_flAttackerUbercharge += ( pct * 100.0 );
+                                            TF2_SetClientUberLevel( m_iAttacker, m_flAttackerUbercharge );
+
+                                            m_flVictimUbercharge -= ( pct * 100.0 );
+                                            TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
+                                        }
+                                    } else {
+                                        TF2_SetClientUberLevel( m_iVictim, 0.0 );
+                                        TF2_SetClientUberLevel( m_iAttacker, ( m_flAttackerUbercharge + m_flVictimUbercharge ) );
+                                    }
+                                }
+                            }
+                        }
                         if ( m_bDrainUbercharge_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
                         {
                             new Float:pct = m_flDrainUbercharge_Percentage[m_iAttacker][m_iSlot];
@@ -3448,88 +3510,6 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 
     m_aAction = Plugin_Changed;
     return m_aAction;
-}
-
-// ====[ ON TAKE DAMAGE POST ]=========================================
-public OnTakeDamagePost( m_iVictim, m_iAttacker, m_iInflictor, Float:m_flDamage, m_iType, m_iWeapon, const Float:m_flForce[3], const Float:m_flPosition[3] )
-{
-    if ( m_flDamage >= 1.0
-        && IsValidClient( m_iAttacker )
-        && IsValidClient( m_iVictim )
-        && !HasInvulnerabilityCond( m_iVictim )
-        && m_iWeapon != -1 )
-    {
-        if ( m_iType & TF_DMG_CRIT || IsCritBoosted( m_iAttacker ) )
-        {
-            new m_iSlot = TF2_GetWeaponSlot( m_iAttacker, m_iWeapon );
-            if ( m_iSlot != -1 && m_bHasAttribute[m_iAttacker][m_iSlot] )
-            {
-                if ( m_bStunOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    if ( m_hTimers[m_iVictim][m_hStunlock_TimerDelay] == INVALID_HANDLE )
-                    {
-                        new Float:duration = m_flStunOnCrit_Duration[m_iAttacker][m_iSlot];
-                        if ( m_iStunOnCrit_StunLock[m_iAttacker][m_iSlot] == 1 ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = CreateTimer( duration * 2.0, m_tStunLock, m_iVictim );
-                            
-                        TF2_StunPlayer( m_iVictim, duration, 1.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, m_iAttacker );
-                        EmitSoundToClient( m_iAttacker, SOUND_TBASH, _, _, _, _, 0.25 );
-                        EmitSoundToClient( m_iVictim, SOUND_TBASH, _, _, _, _, 0.75 );
-                    }
-                }
-            //-//
-                if ( m_bHotSauceOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                {
-                    new type = m_iHotSauceOnCrit_Type[m_iAttacker][m_iSlot];
-
-                    if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
-                    {
-                            new Handle:m_hData01 = CreateDataPack();
-                            CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
-                            WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
-                            WritePackCell( m_hData01, m_iVictim );
-                            WritePackCell( m_hData01, m_iAttacker );
-                            WritePackCell( m_hData01, type );
-                            m_iIntegers[m_iVictim][m_iHotSauceType] = type;
-                    }
-                }
-                if ( m_iVictim != m_iAttacker )
-                {
-                    if ( m_bDrainUberchargeOnCrit_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iVictim ) == TFClass_Medic && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Medic )
-                    {
-                        new Float:pct = m_flDrainUberchargeOnCrit_Percentage[m_iAttacker][m_iSlot];
-                        new Float:m_flAttackerUbercharge = TF2_GetClientUberLevel( m_iAttacker );
-                        new Float:m_flVictimUbercharge = TF2_GetClientUberLevel( m_iVictim );
-
-                        if ( m_flVictimUbercharge > 0.0 && m_flAttackerUbercharge < 100.0 )
-                        {
-                            if ( m_flVictimUbercharge >= ( pct * 100.0 ) )
-                            {
-                                if ( m_flAttackerUbercharge > ( 100.0 - ( pct * 100.0 ) ) )
-                                {
-                                    m_flVictimUbercharge -= ( 100.0 - m_flAttackerUbercharge );
-                                    TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
-
-                                    TF2_SetClientUberLevel( m_iAttacker, 100.0 );
-                                } else {
-                                    m_flAttackerUbercharge += ( pct * 100.0 );
-                                    TF2_SetClientUberLevel( m_iAttacker, m_flAttackerUbercharge );
-
-                                    m_flVictimUbercharge -= ( pct * 100.0 );
-                                    TF2_SetClientUberLevel( m_iVictim, m_flVictimUbercharge );
-                                }
-                            } else {
-                                TF2_SetClientUberLevel( m_iVictim, 0.0 );
-                                TF2_SetClientUberLevel( m_iAttacker, ( m_flAttackerUbercharge + m_flVictimUbercharge ) );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if ( m_flDamage < 0.0 ) m_flDamage = 0.0;
-
-    return;
 }
 
 // ====[ CALC IS ATTACK CRITICAL ]=====================================
