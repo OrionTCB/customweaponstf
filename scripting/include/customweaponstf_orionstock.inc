@@ -278,8 +278,20 @@ stock TF2_Medigun(client)
 stock TF2_GetClientMetal(client) return GetEntProp(client, Prop_Data, "m_iAmmo", 4, 3);
 stock TF2_SetClientMetal(client, NewMetal)
 {
+    new Float:mult = 1.0;
+    new Address:attribute;
     if (NewMetal < 0) NewMetal = 0;
-    if (NewMetal > 200) NewMetal = 200;
+    for ( new i = 0 ; i <= 4 ; i++ ) {
+        if ( TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal increased" ) ) {
+            attribute = TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal increased" );
+            mult *= TF2Attrib_GetValue( attribute );
+        }
+        if ( TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal reduced" ) ) {
+            attribute = TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal reduced" );
+            mult *= TF2Attrib_GetValue( attribute );
+        }
+    }
+    if (NewMetal > 200 * mult ) NewMetal = RoundToFloor( 200 * mult );
     SetEntProp(client, Prop_Data, "m_iAmmo", NewMetal, 4, 3);
 }
 
