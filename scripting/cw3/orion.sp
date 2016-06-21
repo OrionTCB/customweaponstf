@@ -42,14 +42,16 @@ enum
     Handle:m_hStunlock_TimerDelay,
     Handle:m_hHeatFireRate_TimerDelay,
     Handle:m_hHeatDamage_TimerDelay,
+    Handle:m_hDamageChargeThing_Enabled,
     Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
 enum
 {
     m_bBackstab_SuicideBlocker = 0,
-    m_bBuffDeployed,
-    m_bInfiniteAfterburnRessuply,
+    m_bBuff_Deployed,
+    m_bInfiniteAfterburn_Ressuply,
+    m_bDamageChargeThing_Enable,
     m_bLastWasMiss,
     m_bBool
 };
@@ -58,6 +60,7 @@ enum
 {
     m_flPsychoRegenCharge = 0,
     m_flPyschoCharge,
+    m_flDamageCharge,
     m_flDamageReceived,
     m_flFloat
 };
@@ -310,6 +313,12 @@ new Float:m_flLaserWeaponDamageModifier_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bStealDamage_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flStealDamage_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iStealDamage_Steal[MAXPLAYERS + 1][MAXSLOTS + 1];
+
+new bool:m_bDamageChargeThing_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flDamageChargeThing_Charge[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flDamageChargeThing_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flDamageChargeThing_DeCharge[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flDamageChargeThing_DamageSelf[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 
     /* Heal
@@ -652,10 +661,10 @@ public Event_PostInventoryApplication( Handle:m_hEvent, const String:m_strName[]
             TF2_RemoveCondition( m_iClient, TFCond_RegenBuffed );
             TF2_RemoveCondition( m_iClient, TFCond_SpeedBuffAlly );
         }
-        if ( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] != INVALID_HANDLE && m_bBools[m_iClient][m_bInfiniteAfterburnRessuply] )
+        if ( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] != INVALID_HANDLE && m_bBools[m_iClient][m_bInfiniteAfterburn_Ressuply] )
         {
             ClearTimer( m_hTimers[m_iClient][m_hInfiniteAfterburn_TimerDuration] );
-            m_bBools[m_iClient][m_bInfiniteAfterburnRessuply] = false;
+            m_bBools[m_iClient][m_bInfiniteAfterburn_Ressuply] = false;
             g_pBurner[m_iClient] = -1;
         }
         if ( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hHeatFireRate_TimerDelay] );
@@ -691,7 +700,7 @@ public Event_BuffDeployed( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
     
     if ( IsValidClient( m_iClient ) && IsPlayerAlive( m_iClient ) )
     {
-        if ( HasAttribute( m_iClient, _, m_bBuffStuff_ATTRIBUTE ) ) m_bBools[m_iClient][m_bBuffDeployed] = true;
+        if ( HasAttribute( m_iClient, _, m_bBuffStuff_ATTRIBUTE ) ) m_bBools[m_iClient][m_bBuff_Deployed] = true;
     }
 
     return;
@@ -742,6 +751,7 @@ public OnPreThink( m_iClient )
         m_iButtons = ATTRIBUTE_REMOVESTUN( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_SETWEAPONSWITCH( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_SPYDETECTOR( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
+        m_iButtons = ATTRIBUTE_CHARGEDAMAGETHING( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
 
         m_iButtons = HUD_SHOWSYNCHUDTEXT( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
 
@@ -1134,7 +1144,7 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         new id3 = GetAttributeValueI( m_iClient, _, m_bBuffStuff_ATTRIBUTE, m_iBuffStuff_ID3 );
         new id4 = GetAttributeValueI( m_iClient, _, m_bBuffStuff_ATTRIBUTE, m_iBuffStuff_ID4 );
 
-        if ( m_bBools[m_iClient][m_bBuffDeployed] )
+        if ( m_bBools[m_iClient][m_bBuff_Deployed] )
         {
             for ( new i = 1; i <= MaxClients; i++ )
             {
@@ -1169,7 +1179,7 @@ ATTRIBUTE_BUFFSTUFF( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             }
         }
         if ( GetEntPropFloat( m_iClient, Prop_Send, "m_flRageMeter" ) < 1.0 )
-            m_bBools[m_iClient][m_bBuffDeployed] = false;
+            m_bBools[m_iClient][m_bBuff_Deployed] = false;
     }
 
     return m_iButtons;
@@ -1179,6 +1189,30 @@ ATTRIBUTE_SETWEAPONSWITCH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE ) )
         TF2_SetClientSlot( m_iClient, GetAttributeValueI( m_iClient, _, m_bSetWeaponSwitch_ATTRIBUTE, m_iSetWeaponSwith_Slot ) );
+
+    return m_iButtons;
+}
+
+ATTRIBUTE_CHARGEDAMAGETHING( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
+{
+    if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
+    {
+        if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE, true ) && m_iButtons & IN_ATTACK2 == IN_ATTACK2 )
+        {
+            if ( m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] == INVALID_HANDLE )
+            {
+                if ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ) {
+                    m_bBools[m_iClient][m_bDamageChargeThing_Enable] = false;
+                    EmitSoundToClient( m_iClient, SOUND_NOTREADY );
+                    m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] = CreateTimer( 1.0, m_tChargeDamageThing, m_iClient );
+                } else {
+                    m_bBools[m_iClient][m_bDamageChargeThing_Enable] = true;
+                    EmitSoundToClient( m_iClient, SOUND_READY );
+                    m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] = CreateTimer( 1.0, m_tChargeDamageThing, m_iClient );
+                }
+            }
+        }
+    }
 
     return m_iButtons;
 }
@@ -1225,6 +1259,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     new String:m_strHUDMissDecreasesFireRate[64];
     new String:m_strHUDPsycho[64];
     new String:m_strHUDSteal[64];
+    new String:m_strHUDDamageChargeThing[64];
 
     if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
     {
@@ -1289,16 +1324,25 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen %i", m_iIntegers[m_iClient][m_iStealDamageAttacker] - m_iIntegers[m_iClient][m_iStealDamageVictim] );
     }
 //-//
+    if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
+    {
+        new String:m_sState[6];
+        ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), "[ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), "[OFF]", m_sState ) );
+
+        Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f %s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
+    }
+//-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
     {
-        ShowSyncHudText( m_iClient, g_hHudText_O, "%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s", m_strHUDAttackSpeedOnKill,
-                                                                                           m_strHUDDamageReceivedUnleashedDeath,
-                                                                                           m_strHUDDamageResHpMissing,
-                                                                                           m_strHUDHeatDMGTaken,
-                                                                                           m_strHUDHeatFireRate,
-                                                                                           m_strHUDMissDecreasesFireRate,
-                                                                                           m_strHUDPsycho,
-                                                                                           m_strHUDSteal );
+        ShowSyncHudText( m_iClient, g_hHudText_O, "%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s", m_strHUDAttackSpeedOnKill,
+                                                                                                m_strHUDDamageReceivedUnleashedDeath,
+                                                                                                m_strHUDDamageResHpMissing,
+                                                                                                m_strHUDHeatDMGTaken,
+                                                                                                m_strHUDHeatFireRate,
+                                                                                                m_strHUDMissDecreasesFireRate,
+                                                                                                m_strHUDPsycho,
+                                                                                                m_strHUDSteal,
+                                                                                                m_strHUDDamageChargeThing );
     }
     
     return m_iButtons;
@@ -2266,6 +2310,21 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bScareOnKill_ATTRIBUTE[m_iClient][m_iSlot]    = true;
         m_aAction = Plugin_Handled;
     }
+    /* Damage Charge Thing
+     *
+     * ---------------------------------------------------------------------- */
+    else if ( StrEqual( m_sAttribute, "dmg charge thing" ) )
+    {
+        new String:m_sValues[4][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+
+        m_flDamageChargeThing_Charge[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
+        m_flDamageChargeThing_Damage[m_iClient][m_iSlot]        = StringToFloat( m_sValues[1] );
+        m_flDamageChargeThing_DeCharge[m_iClient][m_iSlot]      = StringToFloat( m_sValues[2] );
+        m_flDamageChargeThing_DamageSelf[m_iClient][m_iSlot]    = StringToFloat( m_sValues[3] );
+        m_bDamageChargeThing_ATTRIBUTE[m_iClient][m_iSlot]      = true;
+        m_aAction = Plugin_Handled;
+    }
 
     if ( !m_bHasAttribute[m_iClient][m_iSlot] ) m_bHasAttribute[m_iClient][m_iSlot] = bool:m_aAction;
     return m_aAction;
@@ -2519,6 +2578,12 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bStealDamage_ATTRIBUTE[m_iClient][m_iSlot]                                 = false;
             m_iStealDamage_Steal[m_iClient][m_iSlot]                                     = 0;
             m_flStealDamage_Duration[m_iClient][m_iSlot]                                 = 0.0;
+
+            m_bDamageChargeThing_ATTRIBUTE[m_iClient][m_iSlot]                           = false;
+            m_flDamageChargeThing_Charge[m_iClient][m_iSlot]                             = 0.0;
+            m_flDamageChargeThing_Damage[m_iClient][m_iSlot]                             = 0.0;
+            m_flDamageChargeThing_DeCharge[m_iClient][m_iSlot]                           = 0.0;
+            m_flDamageChargeThing_DamageSelf[m_iClient][m_iSlot]                         = 0.0;
 
 
             /* Heal
@@ -2858,7 +2923,23 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                             if ( m_bStealDamage_ATTRIBUTE[m_iAttacker][m_iSlot] ) {
                                 m_flDamage += m_iIntegers[m_iAttacker][m_iStealDamageAttacker];
                             }
-                            
+                        //-//
+                            if ( m_bDamageChargeThing_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            {
+                                if ( m_bBools[m_iAttacker][m_bDamageChargeThing_Enable] )
+                                {
+                                    new Float:old_charge = m_flFloats[m_iAttacker][m_flDamageCharge];
+                                    new Float:diff;
+
+                                    m_flFloats[m_iAttacker][m_flDamageCharge] -= m_flDamageChargeThing_DeCharge[m_iAttacker][m_iSlot];
+                                    if ( m_flFloats[m_iAttacker][m_flDamageCharge] < 0.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 0.0;
+                                    diff = old_charge - m_flFloats[m_iAttacker][m_flDamageCharge];
+
+                                    DealDamage( m_iAttacker, RoundToFloor( m_flDamageChargeThing_DamageSelf[m_iAttacker][m_iSlot] * diff ), m_iAttacker, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL );
+                                    m_flDamage += ( diff * m_flDamageChargeThing_Damage[m_iAttacker][m_iSlot] );
+                                }
+                            }
+
                             /* Sets.
                              *
                              * -------------------------------------------------- */
@@ -3226,7 +3307,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                         {
                             TF2_IgnitePlayer( m_iVictim, m_iAttacker );
                             g_pBurner[m_iVictim] = m_iAttacker;
-                            if ( m_iInfiniteAfterburn_Ressuply[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bInfiniteAfterburnRessuply] = true;
+                            if ( m_iInfiniteAfterburn_Ressuply[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bInfiniteAfterburn_Ressuply] = true;
                             m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] = CreateTimer( m_flInfiniteAfterburn_Duration[m_iAttacker][m_iSlot], m_tInfiniteAfterburn_TimerDuration, m_iVictim );
                         }
                     }
@@ -3347,6 +3428,15 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                             {
                                 m_iIntegers[m_iVictim][m_iStealDamageVictim] += m_iStealDamage_Steal[m_iAttacker][m_iSlot];
                                 m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageVictim, m_iVictim );
+                            }
+                        }
+                    //-//
+                        if ( m_bDamageChargeThing_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                        {
+                            if ( !m_bBools[m_iAttacker][m_bDamageChargeThing_Enable] ) 
+                            {
+                                m_flFloats[m_iAttacker][m_flDamageCharge] += ( m_flDamage * m_flDamageChargeThing_Charge[m_iAttacker][m_iSlot] );
+                                if ( m_flFloats[m_iAttacker][m_flDamageCharge] > 100.0 ) m_flFloats[m_iAttacker][m_flDamageCharge] = 100.0;
                             }
                         }
                     }
@@ -3984,7 +4074,7 @@ public Action:m_tMCFRTD_Timer( Handle:timer, Handle:m_hData03 )
 public Action:m_tInfiniteAfterburn_TimerDuration( Handle:timer, any:m_iVictim )
 {
     TF2_RemoveCondition( m_iVictim, TFCond_OnFire );
-    m_bBools[m_iVictim][m_bInfiniteAfterburnRessuply] = false;
+    m_bBools[m_iVictim][m_bInfiniteAfterburn_Ressuply] = false;
     g_pBurner[m_iVictim] = -1;
 
     m_hTimers[m_iVictim][m_hInfiniteAfterburn_TimerDuration] = INVALID_HANDLE;
@@ -4000,6 +4090,7 @@ public Action:m_tStealDamageVictim( Handle:timer, any:m_iVictim )
     m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = INVALID_HANDLE;
 }
 public Action:m_tStunLock( Handle:timer, any:m_iVictim ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = INVALID_HANDLE;
+public Action:m_tChargeDamageThing( Handle:timer, any:m_iClient ) m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] = INVALID_HANDLE;
 // Super Timer
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
 
