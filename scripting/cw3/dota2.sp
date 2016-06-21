@@ -62,7 +62,6 @@ enum
 {
     m_flDesolator_DamageAmplification = 0,
     m_flEvasionChance_AW2,
-    /*m_flPRD_StackBad,*/
     m_flRadiance_SubAbilityChance,
     m_flDuel_Bonus,
     m_flFloat
@@ -75,7 +74,6 @@ enum
     m_iOverpower_RemainingHit,
     m_iNecromastery_Souls,
     m_iBloodstone_Charge,
-    /*m_iPRD_Stack,*/
     m_iInteger
 };
 new m_iIntegers[MAXPLAYERS + 1][m_iInteger];
@@ -268,6 +266,7 @@ public OnPluginStart()
         }
     }
 
+    HookEvent( "player_changeclass",         Event_ChangeClass );
     HookEvent( "post_inventory_application", Event_PostInventoryApplication );
     
     HookEvent( "player_death",           Event_Death,          EventHookMode_Pre );
@@ -828,8 +827,13 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         Format( m_strHUDEvasionOnHit, sizeof( m_strHUDEvasionOnHit ), "Evasion %.0f%%", m_flFloats[m_iClient][m_flEvasionChance_AW2] * 100.0 );
     }
 //-//
-    if ( m_flFloats[m_iClient][m_flDuel_Bonus] >= 1.0 ) {
-        Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel %.0f", m_flFloats[m_iClient][m_flDuel_Bonus] );
+    if ( m_flFloats[m_iClient][m_flDuel_Bonus] >= 1.0 || HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) )
+    {
+        new String:m_sState[6];
+        if ( HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) ) {
+            ( m_bBools[m_iClient][m_bDuel_ReadyForIt] ? Format( m_sState, sizeof( m_sState ), "[ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), "[OFF]", m_sState ) );
+        }
+        Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel %.0f %s", m_flFloats[m_iClient][m_flDuel_Bonus], m_sState );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) )
@@ -2251,10 +2255,7 @@ public Action:m_tDuel_Duration( Handle:timer, any:m_iClient )
 
     m_hTimers[m_iClient][m_hDuel_TimerDuration] = INVALID_HANDLE;
 }
-public Action:m_tDuel_Enable( Handle:timer, any:m_iClient )
-{
-    m_hTimers[m_iClient][m_hDuel_TimerEnable] = INVALID_HANDLE;
-}
+public Action:m_tDuel_Enable( Handle:timer, any:m_iClient ) m_hTimers[m_iClient][m_hDuel_TimerEnable] = INVALID_HANDLE;
 public Action:m_tLastWill_TimerDelay( Handle:timer, any:m_hData05 )
 {
     ResetPack( m_hData05 );
