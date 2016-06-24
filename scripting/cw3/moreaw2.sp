@@ -48,7 +48,7 @@ enum
     m_bSniperCombo = 0,
     m_bLastWasMiss,
     m_bPyroCombo,
-    m_bLastWasMissPISS,
+    m_bLastWasMissHotSauce,
     m_bDrainRage,
     m_bBool
 };
@@ -69,6 +69,7 @@ enum
 {
     m_iSniperComboHit = 0,
     m_iPyroComboHit,
+    m_iHotSauceMissType,
     m_iJumpAmount,
     m_iJumpAmountBase,
     m_iMarkedVictim,
@@ -144,7 +145,9 @@ new Float:m_flPyroCombo_DMGB[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flPyroCombo_DMGC[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iPyroCombo_Miss[MAXPLAYERS + 1][MAXSLOTS + 1];
 
-new bool:m_bPissYourselfOnMiss_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new bool:m_bHotSauceYourselfOnMiss_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flHotSauceYourselfOnMiss_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iHotSauceYourselfOnMiss_Type[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bMissCauseDelay_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flMissCauseDelay_Delay[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -468,6 +471,10 @@ public Event_PostInventoryApplication( Handle:m_hEvent, const String:m_strName[]
             TF2_RemoveCondition( m_iClient, TFCond_SpeedBuffAlly );
         }
         for ( new i = 0; i < MAXSLOTS; i++ ) m_bSlotDisabled[m_iClient][i] = false;
+
+        m_bBools[m_iClient][m_bLastWasMissHotSauce] = false;
+        m_bBools[m_iClient][m_bLastWasMiss]         = false;
+        m_iIntegers[m_iClient][m_iHotSauceMissType] = 0;
 
         if ( !g_hPostInventory[m_iClient] ) {
             CreateTimer( 0.02, m_tPostInventory, m_iClient );
@@ -939,7 +946,11 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         {    
             if ( m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] == INVALID_HANDLE && m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] == INVALID_HANDLE && GetEntityFlags( m_iClient ) & FL_ONGROUND )
             {
-                if ( GetAttributeValueI( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_iBonkHealth_KnockBackRes, true ) == 1 ) TF2_AddCondition( m_iClient, TFCond_DefenseBuffMmmph, 0.25 );
+                if ( GetAttributeValueI( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_iBonkHealth_KnockBackRes, true ) == 1 )
+                {
+                    TF2_AddCondition( m_iClient, TFCond_DefenseBuffMmmph, 0.25 );
+                    TF2_AddCondition( m_iClient, TFCond_MegaHeal, 0.25 );
+                }
                 m_hTimers[m_iClient][m_hBonkHealth_TimerDelay] = CreateTimer( 1.2, m_tBonkHealth_Delay, m_iClient );
                 m_hTimers[m_iClient][m_hBonkHealth_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bBonkHealth_ATTRIBUTE, m_flBonkHealth_Cooldown, true )+1.2, m_tBonkHealth, m_iClient );
             }
@@ -955,20 +966,21 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     return m_iButtons;
 }
 
+// TO TEST. I DON'T WANT TO SET THE WORLD ON FIRE. PLZ REMIND ME, ANYONE.
 ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) )
-    {
-        if ( m_flFloats[m_iClient][m_flCloakSpeed] <= 0.0 ) m_flFloats[m_iClient][m_flCloakSpeed] = GetClientMovementSpeed( m_iClient );
+    if ( m_flFloats[m_iClient][m_flCloakSpeed] <= 0.0 ) m_flFloats[m_iClient][m_flCloakSpeed] = GetClientMovementSpeed( m_iClient ); // Stores the client's BASE movement speed if equal to 0.0
 
-        if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) ) {
+    if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) ) // Is client invis ?
+    {
+        if ( HasAttribute( m_iClient, _, m_bSpeedCloak_ATTRIBUTE ) ) // Has he the attribute ? If he does, sets his new movement speed.
             SetClientMovementSpeed( m_iClient, m_flFloats[m_iClient][m_flCloakSpeed] * GetAttributeValueF( m_iClient, _, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
-        }
-        else {
-            SetClientMovementSpeed( m_iClient, m_flFloats[m_iClient][m_flCloakSpeed] );
-            m_flFloats[m_iClient][m_flCloakSpeed] = 0.0;
-        }
     }
+    else { // No ? Then set his speed to the previously stored movement speed.
+        SetClientMovementSpeed( m_iClient, m_flFloats[m_iClient][m_flCloakSpeed] );
+        m_flFloats[m_iClient][m_flCloakSpeed] = 0.0; // Set the stored speed to 0 and redo everything.
+    }
+
 
     return m_iButtons;
 }
@@ -1612,12 +1624,17 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bDemoChargeOnHit_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
-    /* Piss Yourself On Miss
+    /* Hot Sauce Yourself On Miss
      *
      * ---------------------------------------------------------------------- */
-    else if ( StrEqual( m_sAttribute, "piss yourself on miss" ) )
+    else if ( StrEqual( m_sAttribute, "hotsauce yourself on miss" ) )
     {
-        m_bPissYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot] = true;
+        new String:m_sValues[2][10];
+        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
+ 
+        m_flHotSauceYourselfOnMiss_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValues[0] );
+        m_iHotSauceYourselfOnMiss_Type[m_iClient][m_iSlot]      = StringToInt( m_sValues[1] );
+        m_bHotSauceYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot] = true;
         m_aAction = Plugin_Handled;
     }
     /* Disable Primary
@@ -1696,22 +1713,24 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             /* On Attack
              * ---------------------------------------------------------------------- */
 
-            m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot]         = false;
-            m_flSniperCombo_DMGA[m_iClient][m_iSlot]             = 0.0;
-            m_flSniperCombo_DMGB[m_iClient][m_iSlot]             = 0.0;
-            m_flSniperCombo_DMGC[m_iClient][m_iSlot]             = 0.0;
-            m_iSniperCombo_Miss[m_iClient][m_iSlot]              = 0;
+            m_bSniperCombo_ATTRIBUTE[m_iClient][m_iSlot]            = false;
+            m_flSniperCombo_DMGA[m_iClient][m_iSlot]                = 0.0;
+            m_flSniperCombo_DMGB[m_iClient][m_iSlot]                = 0.0;
+            m_flSniperCombo_DMGC[m_iClient][m_iSlot]                = 0.0;
+            m_iSniperCombo_Miss[m_iClient][m_iSlot]                 = 0;
 
-            m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot]           = false;
-            m_flPyroCombo_DMGA[m_iClient][m_iSlot]               = 0.0;
-            m_flPyroCombo_DMGB[m_iClient][m_iSlot]               = 0.0;
-            m_flPyroCombo_DMGC[m_iClient][m_iSlot]               = 0.0;
-            m_iPyroCombo_Miss[m_iClient][m_iSlot]                = 0;
+            m_bPyroCombo_ATTRIBUTE[m_iClient][m_iSlot]              = false;
+            m_flPyroCombo_DMGA[m_iClient][m_iSlot]                  = 0.0;
+            m_flPyroCombo_DMGB[m_iClient][m_iSlot]                  = 0.0;
+            m_flPyroCombo_DMGC[m_iClient][m_iSlot]                  = 0.0;
+            m_iPyroCombo_Miss[m_iClient][m_iSlot]                   = 0;
 
-            m_bPissYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot]  = false;
+            m_bHotSauceYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot] = false;
+            m_flHotSauceYourselfOnMiss_Duration[m_iClient][m_iSlot] = 0.0;
+            m_iHotSauceYourselfOnMiss_Type[m_iClient][m_iSlot]      = 0;
 
-            m_bMissCauseDelay_ATTRIBUTE[m_iClient][m_iSlot]      = false;
-            m_flMissCauseDelay_Delay[m_iClient][m_iSlot]         = 0.0;
+            m_bMissCauseDelay_ATTRIBUTE[m_iClient][m_iSlot]         = false;
+            m_flMissCauseDelay_Delay[m_iClient][m_iSlot]            = 0.0;
 
 
             /* On Kill
@@ -2326,8 +2345,8 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                             if ( m_flChargeMeter < 0.0 ) SetEntPropFloat( m_iAttacker, Prop_Send, "m_flChargeMeter", 0.0 );
                         }
                     //-//
-                        if ( m_bPissYourselfOnMiss_ATTRIBUTE[m_iAttacker][m_iSlot] )
-                            m_bBools[m_iAttacker][m_bLastWasMissPISS] = false;
+                        if ( m_bHotSauceYourselfOnMiss_ATTRIBUTE[m_iAttacker][m_iSlot] )
+                            m_bBools[m_iAttacker][m_bLastWasMissHotSauce] = false;
                     //-//
                         if ( m_bJumpBonus_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
@@ -2511,10 +2530,20 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
                 }
             }
         //-//
-            if ( m_bPissYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bHotSauceYourselfOnMiss_ATTRIBUTE[m_iClient][m_iSlot] )
             {
-                m_bBools[m_iClient][m_bLastWasMissPISS] = true;
-                CreateTimer( 0.25, m_tPissMiss_TimerDelay, m_iClient );
+                new type = m_iHotSauceYourselfOnMiss_Type[m_iClient][m_iSlot];
+                m_bBools[m_iClient][m_bLastWasMissHotSauce] = true;
+
+                if ( m_iIntegers[m_iClient][m_iHotSauceMissType] != type )
+                {
+                    new Handle:m_hData01 = CreateDataPack();
+                    CreateDataTimer( 0.25, m_tHotSauceMiss_TimerDelay, m_hData01 );
+                    WritePackFloat( m_hData01, m_flHotSauceYourselfOnMiss_Duration[m_iClient][m_iSlot] );
+                    WritePackCell( m_hData01, m_iClient );
+                    WritePackCell( m_hData01, type );
+                    m_iIntegers[m_iClient][m_iHotSauceMissType] = type;
+                }
             }
         }
     }
@@ -2596,6 +2625,26 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         }
     }
     return Plugin_Continue;
+}
+
+
+// ====[ ON CONDITION REMOVED ]========================================
+public TF2_OnConditionRemoved( m_iClient, TFCond:condition )
+{
+    if ( IsValidClient( m_iClient ) )
+    {
+        if ( m_iIntegers[m_iClient][m_iHotSauceMissType] != 0 )
+        {
+            new type = m_iIntegers[m_iClient][m_iHotSauceMissType];
+
+            if ( type == 1 || type == 4 || type == 5 || type == 7 )
+                if ( condition == TFCond_Milked ) m_iIntegers[m_iClient][m_iHotSauceMissType] = 0;
+            if ( type == 2 || type == 4 || type == 6 || type == 7 )
+                if ( condition == TFCond_Jarated ) m_iIntegers[m_iClient][m_iHotSauceMissType] = 0;
+            if ( type == 3 || type == 5 || type == 6 || type == 7 )
+                if ( condition == TFCond_Bleeding ) m_iIntegers[m_iClient][m_iHotSauceMissType] = 0;
+        }
+    }
 }
 // -
 // --
@@ -2766,10 +2815,25 @@ public Action:m_tMissCauseDelay_TimerDelay( Handle:timer, Handle:m_hData04 )
 
     m_hTimers[m_iClient][m_hMissCauseDelay_TimerDuration] = INVALID_HANDLE;
 }
-public Action:m_tPissMiss_TimerDelay( Handle:timer, any:m_iClient )
+public Action:m_tHotSauceMiss_TimerDelay( Handle:timer, any:m_hData01 )
 {
-    if ( m_bBools[m_iClient][m_bLastWasMissPISS] == true ) TF2_AddCondition( m_iClient, TFCond_Jarated, 5.0 );
+    ResetPack( m_hData01 );
+
+    new m_iClient, Float:duration, type;
+    duration = ReadPackFloat( m_hData01 );
+    m_iClient = ReadPackCell( m_hData01 );
+    type = ReadPackCell( m_hData01 );
+
+    if ( IsValidClient( m_iClient ) && m_bBools[m_iClient][m_bLastWasMissHotSauce] == true ) {
+        if ( HasAttribute( m_iClient, _, m_bHotSauceYourselfOnMiss_ATTRIBUTE ) )
+        {
+            if ( type == 1 || type == 4 || type == 5 || type == 7 ) TF2_AddCondition( m_iClient, TFCond_Milked, duration, m_iClient );
+            if ( type == 2 || type == 4 || type == 6 || type == 7 ) TF2_AddCondition( m_iClient, TFCond_Jarated, duration, m_iClient );
+            if ( type == 3 || type == 5 || type == 6 || type == 7 ) TF2_MakeBleed( m_iClient, m_iClient, duration );
+        }
+    }
 }
+
 public Action:m_tDamageDone_TimerDuration( Handle:timer, any:m_iClient ) m_hTimers[m_iClient][m_hDamageDone_TimerDuration] = INVALID_HANDLE;
 // Super Timer
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
