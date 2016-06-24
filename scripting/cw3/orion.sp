@@ -3207,13 +3207,13 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 
                             if ( m_iIntegers[m_iVictim][m_iHotSauceType] != type )
                             {
-                                    new Handle:m_hData01 = CreateDataPack();
-                                    CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
-                                    WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
-                                    WritePackCell( m_hData01, m_iVictim );
-                                    WritePackCell( m_hData01, m_iAttacker );
-                                    WritePackCell( m_hData01, type );
-                                    m_iIntegers[m_iVictim][m_iHotSauceType] = type;
+                                new Handle:m_hData01 = CreateDataPack();
+                                CreateDataTimer( 0.01, m_tHotSauce_TimerDuration, m_hData01 );
+                                WritePackFloat( m_hData01, m_flHotSauceOnCrit_Duration[m_iAttacker][m_iSlot] );
+                                WritePackCell( m_hData01, m_iVictim );
+                                WritePackCell( m_hData01, m_iAttacker );
+                                WritePackCell( m_hData01, type );
+                                m_iIntegers[m_iVictim][m_iHotSauceType] = type;
                             }
                         }
                     }
