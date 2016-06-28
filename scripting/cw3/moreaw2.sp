@@ -966,6 +966,7 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     return m_iButtons;
 }
 
+// The biggest problem with movement speed modifier is that we have to constantly modify the movement speed as switching weapon resets it. Why the fuck valve ?!
 // TO TEST. I DON'T WANT TO SET THE WORLD ON FIRE. PLZ REMIND ME, ANYONE.
 ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
@@ -981,10 +982,26 @@ ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         m_flFloats[m_iClient][m_flCloakSpeed] = 0.0; // Set the stored speed to 0 and redo everything.
     }
 
-
     return m_iButtons;
 }
-
+/*
+ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
+{
+    for ( new i = 0 ; i <= 4 ; i++ )
+    {
+        if ( HasAttribute( m_iClient, i, m_bSpeedCloak_ATTRIBUTE ) )
+        {
+            if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) )
+            {
+                SetClientMovementSpeed( m_iClient, ( GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) ) * GetAttributeValueF( m_iClient, i, m_bSpeedCloak_ATTRIBUTE, m_flSpeedCloak_Multiplier ) );
+            }
+        }
+    }
+    // Timer reseting speed every 5.
+    
+    return m_iButtons;
+}
+*/
 ATTRIBUTE_DEMOCHARGEUBERCHARGE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
     if ( HasAttribute( m_iClient, _, m_bDemoCharge_Ubercharge_ATTRIBUTE ) ) {
