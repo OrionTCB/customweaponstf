@@ -923,7 +923,7 @@ ATTRIBUTE_MINIMANN( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 m_hTimers[m_iClient][m_hMiniMann_TimerDelay] = CreateTimer( 1.2, m_tMiniMann_Delay, m_iClient );
                 m_hTimers[m_iClient][m_hMiniMann_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Cooldown, true )+1.2, m_tMiniMann_Cooldown, m_iClient );
                 if ( m_hTimers[m_iClient][m_hMiniMann_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hMiniMann_TimerDuration] );
-                else m_hTimers[m_iClient][m_hMiniMann_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration, true )+1.2, m_tMiniMann_Duration, m_iClient );
+                if ( m_hTimers[m_iClient][m_hMiniMann_TimerDuration] == INVALID_HANDLE ) m_hTimers[m_iClient][m_hMiniMann_TimerDuration] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bMiniMann_ATTRIBUTE, m_flMiniMann_Duration, true )+1.2, m_tMiniMann_Duration, m_iClient );
             }
         }
         if ( m_hTimers[m_iClient][m_hMiniMann_TimerDelay] != INVALID_HANDLE )
@@ -2186,7 +2186,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                 {
                     if ( GetAttributeValueI( m_iVictim, _, m_bMiniMann_ATTRIBUTE, m_iMiniMann_Type ) == 2 ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
                     else {
-                        if ( m_iType & TF_DMG_BLAST || m_iType & TF_DMG_FIRE || m_iType & TF_DMG_AFTERBURN ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
+                        if ( m_iType & TF_DMG_BLAST || m_iType & TF_DMG_FIRE || m_iType & TF_DMG_BURN ) TF2_AddCondition( m_iAttacker, TFCond_Buffed, 0.01 );
                     }
                 }
             //-//
