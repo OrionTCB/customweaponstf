@@ -43,6 +43,9 @@ enum
     Handle:m_hHeatFireRate_TimerDelay,
     Handle:m_hHeatDamage_TimerDelay,
     Handle:m_hDamageChargeThing_Enabled,
+    /*
+    Handle:m_hSPEEDTIMER_SPECIAL,                               [ FOR LATER ]
+    */
     Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
@@ -1244,6 +1247,14 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( !HasAttribute( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE ) ) {
         if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iAttackSpeed] = 0;
     }
+    /*
+    if ( m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] == INVALID_HANDLE ) {
+        PrintToChat( m_iClient, "Ohayo Gozaimasu - %.0f - %.0f - %.0f", GetClassBaseMovementSpeed( m_iClient ),
+                                                                        GetClientMovementSpeedAttributes( m_iClient ),
+                                                                        GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
+        m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] = CreateTimer( 5.0, m_tSPEEDTIMER, m_iClient );
+    }
+    */
 
     return m_iButtons;
 }
@@ -4071,6 +4082,14 @@ public Action:m_tStealDamageVictim( Handle:timer, any:m_iVictim )
 }
 public Action:m_tStunLock( Handle:timer, any:m_iVictim ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = INVALID_HANDLE;
 public Action:m_tChargeDamageThing( Handle:timer, any:m_iClient ) m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] = INVALID_HANDLE;
+/*
+public Action:m_tSPEEDTIMER( Handle:timer, any:m_iClient ) 
+{
+    SetClientMovementSpeed( m_iClient, GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
+    
+    m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] = INVALID_HANDLE;
+}
+*/
 // Super Timer
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
 
