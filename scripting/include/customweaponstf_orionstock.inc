@@ -281,7 +281,8 @@ stock TF2_SetClientMetal(client, NewMetal)
     new Float:mult = 1.0;
     new Address:attribute;
     if (NewMetal < 0) NewMetal = 0;
-    for ( new i = 0 ; i <= 4 ; i++ ) {
+    for ( new i = 0 ; i <= 4 ; i++ )
+    {
         if ( TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal increased" ) ) {
             attribute = TF2Attrib_GetByName( GetPlayerWeaponSlot( client, i ), "maxammo metal increased" );
             mult *= TF2Attrib_GetValue( attribute );
@@ -513,8 +514,81 @@ stock RemoveMiniCrit(client)
 }
 
 // ====[ MOVEMENT SPEED ]==============================================
-stock Float:GetClientMovementSpeed(client) return GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
-stock SetClientMovementSpeed(client, Float:value) return SetEntPropFloat(client, Prop_Send, "m_flMaxspeed", value);
+stock Float:GetClientMovementSpeed( client ) return GetEntPropFloat( client, Prop_Send, "m_flMaxspeed" );
+stock SetClientMovementSpeed( client, Float:value ) return SetEntPropFloat( client, Prop_Send, "m_flMaxspeed", value );
+stock Float:GetClassBaseMovementSpeed( client )
+{
+    if ( IsValidClient( client ) && IsPlayerAlive( client ) )
+    {
+        if ( TF2_GetPlayerClass( client ) == TFClass_Scout ) return 400.0;
+        if ( TF2_GetPlayerClass( client ) == TFClass_Medic ) return 320.0;
+        if ( TF2_GetPlayerClass( client ) == TFClass_DemoMan ) return 280.0;
+        if ( TF2_GetPlayerClass( client ) == TFClass_Soldier ) return 240.0;
+        if ( TF2_GetPlayerClass( client ) == TFClass_Heavy ) return 230.0;
+        
+        return 300.0;
+    }
+
+    return 0.0;
+}
+stock Float:GetClientMovementSpeedAttributes( client )
+{
+    if ( IsValidClient( client ) && IsPlayerAlive( client ) )
+    {
+        new bool:active[MAXSLOTS + 1];
+        new Float:mult = 1.0;
+        new Address:attribute = Address_Null;
+
+        for ( new i = 0 ; i <= 4 ; i++ )
+        {
+            new weapon_slot = GetPlayerWeaponSlot( client, i );
+            new active_slot = TF2_GetClientActiveSlot( client );
+            
+            if ( IsValidEdict( weapon_slot ) && IsValidEntity( weapon_slot ) )
+            {
+                if ( ( attribute = TF2Attrib_GetByName( weapon_slot, "provide on active" ) ) != Address_Null ) 
+                    active[i] = true;
+                
+                attribute = TF2Attrib_GetByName( weapon_slot, "move speed bonus" );
+                if ( attribute != Address_Null )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+                
+                attribute = TF2Attrib_GetByName( weapon_slot, "move speed penalty" );
+                if ( attribute != Address_Null )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+
+                attribute = TF2Attrib_GetByName( weapon_slot, "aiming movespeed increased" );
+                if ( attribute != Address_Null && TF2_IsPlayerInCondition( client, TFCond_Slowed ) )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+
+                attribute = TF2Attrib_GetByName( weapon_slot, "aiming movespeed decreased" );
+                if ( attribute != Address_Null && TF2_IsPlayerInCondition( client, TFCond_Slowed ) )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+
+                attribute = TF2Attrib_GetByName( weapon_slot, "sniper aiming movespeed decreased" );
+                if ( attribute != Address_Null && TF2_IsPlayerInCondition( client, TFCond_Slowed ) )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+
+                attribute = TF2Attrib_GetByName( weapon_slot, "speed boost when active" );
+                if ( attribute != Address_Null )
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+            }
+        }
+        
+        return mult;
+    }
+
+    return 1.0;
+}
+stock Float:GetMultMoveSpeed( Address:attribute, bool:active, active_slot, slot )
+{
+    if ( attribute != Address_Null ) {
+        if ( attribute && !active
+           || attribute && active && active_slot == slot )
+            return TF2Attrib_GetValue( attribute );
+    }
+    return 1.0;
+}
 
 // ====[ VELOCITY ]====================================================
 stock GetVelocity(client, Float:vVector[3]) GetEntPropVector(client, Prop_Data, "m_vecVelocity", vVector);
@@ -654,49 +728,38 @@ stock SpawnThing(String:entity[32] = "", Float:duration = 0.0, victim, team = -1
         CreateTimer(duration, m_tSpawnSkeletonOnKill_TimerDuration, ent);
     }
 }
-stock SpawnBombz(client, m_iEnt, bool:m_bCritical = false, m_iCount = 0, Float:m_flDamage = 100.0, Float:m_flRadius = 146.0)
+stock SpawnBombz(client, m_iEnt, bool:m_bCritical = false, m_iCount = 0, Float:m_flDamage = 1.0, Float:m_flRadius = 1.0)
 {
-    new clientteam = GetClientTeam(client);         //Throwers team
-
     new Float:pos[3];
-    GetEntPropVector(m_iEnt, Prop_Send, "m_vecOrigin", pos);
-    EmitSoundFromOrigin(SOUND_STICKYDETONATE, pos);
-    
-    decl Float:g_angles[3], Float:g_angles2[3];     //Rotate sticky a bit when it shoots a bomblet
-    GetEntPropVector(m_iEnt, Prop_Send, "m_angRotation", g_angles);
+    GetEntPropVector( m_iEnt, Prop_Send, "m_vecOrigin", pos );
+    EmitSoundFromOrigin( SOUND_STICKYDETONATE, pos );
 
-    g_angles2[0] = (g_angles[0] += GetRandomFloat(5.0,45.0));
-    g_angles2[1] = (g_angles[1] += GetRandomFloat(5.0,45.0));
-    g_angles2[2] = (g_angles[2] += GetRandomFloat(5.0,45.0));
-        
-    for (new i = 1; i <= m_iCount; i++)
+    if ( m_iCount > 400 ) m_iCount = 400;
+    for ( new i = 1; i <= m_iCount; i++ )
     {
         decl Float:m_flAngle[3];
-        m_flAngle[0] = GetRandomFloat(-146.0-(m_iCount/2), 146.0+m_iCount/2);       //Left, Right
-        m_flAngle[1] = GetRandomFloat(-146.0-(m_iCount/2), 146.0+m_iCount/2);       //Forward, Back
-        m_flAngle[2] = GetRandomFloat(146.0+m_iCount, 510.0+m_iCount);      //Up, Down
+        m_flAngle[0] = GetRandomFloat( -360.0 - ( m_iCount * 2 ), 360.0 + ( m_iCount * 2 ) );       //Left, Right
+        m_flAngle[1] = GetRandomFloat( -360.0 - ( m_iCount * 2 ), 360.0 + ( m_iCount * 2 ) );       //Forward, Back
+        m_flAngle[2] = GetRandomFloat( 180.0 + ( m_iCount * 2 ), 720.0 + ( m_iCount * 2 ) );        //Up, Down
         
-        new pitch = 150;
-        new Float:volume = 0.5;
-        EmitAmbientSound(SOUND_GRENADE, pos, m_iEnt, _, _, volume, pitch);
+        EmitAmbientSound( SOUND_GRENADE, pos, m_iEnt, _, _, 0.5, 150 );
         
-        new ent2 = CreateEntityByName("tf_projectile_pipe");
+        new ent2 = CreateEntityByName( "tf_projectile_pipe" );
         
         if(ent2 != -1)
         {
-            SetEntPropEnt(ent2, Prop_Data, "m_hThrower", client);
-            SetEntProp(ent2, Prop_Send, "m_iTeamNum", clientteam);
-            if (m_bCritical) SetEntProp(ent2, Prop_Send, "m_bCritical", true);
-            SetEntPropFloat(ent2, Prop_Send, "m_flModelScale", 0.9);
-            SetEntPropFloat(ent2, Prop_Send, "m_DmgRadius", m_flRadius);
-            SetEntPropFloat(ent2, Prop_Send, "m_flDamage", m_flDamage);
+            SetEntPropEnt( ent2, Prop_Data, "m_hThrower", client );
+            SetEntProp( ent2, Prop_Send, "m_iTeamNum", GetClientTeam( client ) );
+            if ( m_bCritical ) SetEntProp( ent2, Prop_Send, "m_bCritical", true );
+            //SetEntPropFloat( ent2, Prop_Send, "m_flModelScale", 1 );
+            SetEntPropFloat( ent2, Prop_Send, "m_DmgRadius", ( 146.0 * m_flRadius ) );
+            SetEntPropFloat( ent2, Prop_Send, "m_flDamage", ( 100.0 * m_flDamage ) );
             
-            DispatchSpawn(ent2);
+            DispatchSpawn( ent2 );
             
-            SetEntityModel(ent2, MDL_BOMBLET);
+            SetEntityModel( ent2, MDL_BOMBLET );
             
-            TeleportEntity(ent2, pos, NULL_VECTOR, m_flAngle);
-            TeleportEntity(m_iEnt, NULL_VECTOR, g_angles2, NULL_VECTOR);  
+            TeleportEntity( ent2, pos, NULL_VECTOR, m_flAngle ); 
         }
     }
 }
