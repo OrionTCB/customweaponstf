@@ -3556,7 +3556,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
             }
         //-//
             if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] )
-                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetClipAmmo( m_iClient, m_iWeapon )+0.0 );
+                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetLoadedAmmo( m_iClient, TF2_GetWeaponSlot( m_iClient, m_iWeapon ) )+0.0 );
         }
     }
     return Plugin_Continue;
