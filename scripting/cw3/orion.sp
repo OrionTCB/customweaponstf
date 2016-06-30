@@ -1337,9 +1337,9 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
     {
         new String:m_sState[6];
-        ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), "[ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), "[OFF]", m_sState ) );
+        ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
 
-        Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f %s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
+        Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
     }
 //-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
@@ -2346,6 +2346,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
     {
         if ( m_bHasAttribute[m_iClient][m_iSlot] )
         {
+            new weapon = GetPlayerWeaponSlot( m_iClient, m_iSlot );
             m_bHasAttribute[m_iClient][m_iSlot] = false;
 
 
@@ -2371,11 +2372,11 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bRemoveBleeding_ATTRIBUTE[m_iClient][m_iSlot]              = false;
 
-            if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "Set DamageType Ignite" );
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "weapon burn time increased" );
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "weapon burn time reduced" );
+                TF2Attrib_RemoveByName( weapon, "Set DamageType Ignite" );
+                TF2Attrib_RemoveByName( weapon, "weapon burn time increased" );
+                TF2Attrib_RemoveByName( weapon, "weapon burn time reduced" );
             }
             m_bAfterburnCLOSERANGE_ATTRIBUTE[m_iClient][m_iSlot]         = false;
             m_flAfterburnCLOSERANGE_Duration[m_iClient][m_iSlot]         = 0.0;
@@ -2439,9 +2440,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bMetalPerShot_ATTRIBUTE[m_iClient][m_iSlot]    = false;
             m_iMetalPerShot_Amount[m_iClient][m_iSlot]       = 0;
 
-            if ( m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate penalty" );
+                TF2Attrib_RemoveByName( weapon, "fire rate penalty" );
             }
             m_bMCFRTD_ATTRIBUTE[m_iClient][m_iSlot]          = false;
             m_flMCFRTD_AttackSpeed[m_iClient][m_iSlot]       = 0.0;
@@ -2459,9 +2460,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_iSpawnSkeletonOnKill_Boss[m_iClient][m_iSlot]          = 0;
             m_flSpawnSkeletonOnKill_BossChance[m_iClient][m_iSlot]   = 0.0;
 
-            if ( m_bAttackSpeedOnKill_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bAttackSpeedOnKill_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+                TF2Attrib_RemoveByName( weapon, "fire rate bonus" );
             }
             m_bAttackSpeedOnKill_ATTRIBUTE[m_iClient][m_iSlot]       = false;
             m_flAttackSpeedOnKill_AttackSpeed[m_iClient][m_iSlot]    = 0.0;
@@ -2551,9 +2552,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bMetalOnHitDamage_ATTRIBUTE[m_iClient][m_iSlot]                            = false;
             m_flMetalOnHitDamage_Multiplier[m_iClient][m_iSlot]                          = 0.0;
 
-            if ( m_bBonusDamageVsSapper_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bBonusDamageVsSapper_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "dmg penalty vs buildings" );
+                TF2Attrib_RemoveByName( weapon, "dmg penalty vs buildings" );
             }
             m_bBonusDamageVsSapper_ATTRIBUTE[m_iClient][m_iSlot]                         = false;
             m_flBonusDamageVsSapper_Multiplier[m_iClient][m_iSlot]                       = 0.0;
@@ -2629,9 +2630,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flLowBerserker_Threshold[m_iClient][m_iSlot]               = 0.0;
             m_iLowBerserker_Kill[m_iClient][m_iSlot]                     = 0;
 
-            if ( m_bHeatFireRate_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bHeatFireRate_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "fire rate bonus" );
+                TF2Attrib_RemoveByName( weapon, "fire rate bonus" );
             }
             m_bHeatFireRate_ATTRIBUTE[m_iClient][m_iSlot]                = false;
             m_flHeatFireRate_AttackSpeed[m_iClient][m_iSlot]             = 0.0;
@@ -2685,9 +2686,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_bSetWeaponSwitch_ATTRIBUTE[m_iClient][m_iSlot]             = false;
             m_iSetWeaponSwith_Slot[m_iClient][m_iSlot]                   = 0;
 
-            if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] )
+            if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
-                TF2Attrib_RemoveByName( GetPlayerWeaponSlot( m_iClient, m_iSlot ), "bullets per shot bonus" );
+                TF2Attrib_RemoveByName( weapon, "bullets per shot bonus" );
             }
             m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot]  = false;
 
@@ -3556,7 +3557,7 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
             }
         //-//
             if ( m_bBulletsPerShotBonusDynamic_ATTRIBUTE[m_iClient][m_iSlot] )
-                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetLoadedAmmo( m_iClient, TF2_GetWeaponSlot( m_iClient, m_iWeapon ) )+0.0 );
+                TF2Attrib_SetByName( m_iWeapon, "bullets per shot bonus", GetClipAmmo( m_iClient, TF2_GetWeaponSlot( m_iClient, m_iWeapon ) )+0.0 );
         }
     }
     return Plugin_Continue;
