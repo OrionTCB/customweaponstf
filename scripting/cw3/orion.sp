@@ -44,7 +44,7 @@ enum
     Handle:m_hHeatDamage_TimerDelay,
     Handle:m_hDamageChargeThing_Enabled,
     /*
-    Handle:m_hSPEEDTIMER_SPECIAL,                               [ FOR LATER ]
+    Handle:m_hSPEEDTIMER_SPECIAL,                               [ FOR LATER, OR NEVER, IDK, DOESN'T WORK ON VALVE'S WEAPON, BULLSHIT. ]
     */
     Handle:m_hTimer
 };
@@ -1336,7 +1336,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 //-//
     if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
     {
-        new String:m_sState[6];
+        new String:m_sState[7];
         ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
 
         Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
@@ -2477,10 +2477,10 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             m_bTeleportToVictimOnKill_ATTRIBUTE[m_iClient][m_iSlot]  = false;
 
-            m_bScareOnKill_ATTRIBUTE[m_iClient][m_iSlot]    = true;
-            m_flScareOnKill_Duration[m_iClient][m_iSlot]    = 0.0;
-            m_flScareOnKill_Radius[m_iClient][m_iSlot]      = 0.0;
-            m_iScareOnKill_StunLock[m_iClient][m_iSlot]     = 0;
+            m_bScareOnKill_ATTRIBUTE[m_iClient][m_iSlot]             = true;
+            m_flScareOnKill_Duration[m_iClient][m_iSlot]             = 0.0;
+            m_flScareOnKill_Radius[m_iClient][m_iSlot]               = 0.0;
+            m_iScareOnKill_StunLock[m_iClient][m_iSlot]              = 0;
 
 
 
@@ -4086,7 +4086,7 @@ public Action:m_tChargeDamageThing( Handle:timer, any:m_iClient ) m_hTimers[m_iC
 /*
 public Action:m_tSPEEDTIMER( Handle:timer, any:m_iClient ) 
 {
-    SetClientMovementSpeed( m_iClient, GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
+    //SetClientMovementSpeed( m_iClient, GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
     
     m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] = INVALID_HANDLE;
 }
