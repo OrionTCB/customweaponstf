@@ -110,7 +110,7 @@ stock String:g_strSoundExplosionBox[][PLATFORM_MAX_PATH] = {
 #define SDK_DMG_UNKNOWN7                    (1 << 25)                                               // 33554432
 #define TF_DMG_RIFLE_CHARGED                SDK_DMG_UNKNOWN7 | TF_DMG_BULLET                        // 33554434     ► Also Crusader's Crossbow && Huntsman && The Classic.
 #define TF_DMG_RIFLE_CRIT                   TF_DMG_RIFLE_CHARGED | TF_DMG_CRIT                      // 34603010     ► Also Crusader's Crossbow && Huntsman && The Classic.
-#define TF_DMG_AMBASSADOR                   SDK_DMG_UNKNOWN7 | TF_DMG_BULLET2                       // 35651586     ► Only when able to Headshot.
+#define TF_DMG_AMBASSADOR                   SDK_DMG_UNKNOWN7 | TF_DMG_BULLET2                       // 35651586
 #define TF_DMG_AMBASSADOR_CRIT              TF_DMG_AMBASSADOR | TF_DMG_CRIT                         // 35651586     ► Only when able to Headshot.
 #define SDK_DMG_UNKNOWN8                    (1 << 26)                                               // 67108864
 #define TF_DMG_BLAST_SURFACE                (1 << 27)                                               // 134217728
