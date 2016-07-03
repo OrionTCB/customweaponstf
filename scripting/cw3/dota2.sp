@@ -914,7 +914,7 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 //-//
     if ( m_flFloats[m_iClient][m_flDuel_Bonus] >= 1.0 || HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) )
     {
-        new String:m_sState[6];
+        new String:m_sState[7];
         if ( HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) ) {
             ( m_bBools[m_iClient][m_bDuel_ReadyForIt] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
         }
@@ -1405,7 +1405,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flNecromastery_BonusDamage[m_iClient][m_iSlot]     = 0.0;
             m_flNecromastery_Removal[m_iClient][m_iSlot]         = 0.0;
             m_iNecromastery_MaximumStack[m_iClient][m_iSlot]     = 0;
-            m_iNecromastery_PoA[m_iClient][m_iSlot]  = 0;
+            m_iNecromastery_PoA[m_iClient][m_iSlot]              = 0;
 
             m_bBloodbath_ATTRIBUTE[m_iClient][m_iSlot]           = false;
             m_flBloodbath_Heal[m_iClient][m_iSlot]               = 0.0;
@@ -1415,7 +1415,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             /* On Damage
              * ---------------------------------------------------------------------- */
 
-            m_bKillAtLowHealthPointsThreshold_ATTRIBUTE[m_iClient][m_iSlot]     = false;
+            m_bKillAtLowHealthPointsThreshold_ATTRIBUTE[m_iClient][m_iSlot]      = false;
             m_flKillAtLowHealthPointsThreshold_Threshold[m_iClient][m_iSlot]     = 0.0;
 
             m_bKillAtHighHealthPointsThreshold_ATTRIBUTE[m_iClient][m_iSlot]     = false;
@@ -1438,9 +1438,9 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flDesolator_DamageAmp[m_iClient][m_iSlot]                          = 0.0;
             m_flDesolator_Duration[m_iClient][m_iSlot]                           = 0.0;
 
-            m_bBurningSpear_ATTRIBUTE[m_iClient][m_iSlot]                       = false;
-            m_flBurningSpear_Damage[m_iClient][m_iSlot]                         = 0.0;
-            m_iBurningSpear_MaxStack[m_iClient][m_iSlot]                        = 0;
+            m_bBurningSpear_ATTRIBUTE[m_iClient][m_iSlot]                        = false;
+            m_flBurningSpear_Damage[m_iClient][m_iSlot]                          = 0.0;
+            m_iBurningSpear_MaxStack[m_iClient][m_iSlot]                         = 0;
 
 
             /* On Prethink
@@ -1458,20 +1458,20 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             /* On Chance
              * ---------------------------------------------------------------------- */
 
-            m_bBash_ATTRIBUTE[m_iClient][m_iSlot]                    = false;
-            m_flBash_BonusDamage[m_iClient][m_iSlot]                 = 0.0;
-            m_flBash_Chance[m_iClient][m_iSlot]                      = 0.0;
-            m_flBash_Duration[m_iClient][m_iSlot]                    = 0.0;
+            m_bBash_ATTRIBUTE[m_iClient][m_iSlot]              = false;
+            m_flBash_BonusDamage[m_iClient][m_iSlot]           = 0.0;
+            m_flBash_Chance[m_iClient][m_iSlot]                = 0.0;
+            m_flBash_Duration[m_iClient][m_iSlot]              = 0.0;
 
-            m_bEvasion_ATTRIBUTE[m_iClient][m_iSlot]                 = false;
-            m_flEvasion_Chance[m_iClient][m_iSlot]                   = 0.0;
+            m_bEvasion_ATTRIBUTE[m_iClient][m_iSlot]           = false;
+            m_flEvasion_Chance[m_iClient][m_iSlot]             = 0.0;
 
             m_bEvasionAW2_ATTRIBUTE[m_iClient][m_iSlot]        = false;
             m_flEvasionAW2_Add[m_iClient][m_iSlot]             = 0.0;
             m_flEvasionAW2_RemovalMelee[m_iClient][m_iSlot]    = 0.0;
             m_flEvasionAW2_Removal[m_iClient][m_iSlot]         = 0.0;
             m_iEvasionAW2_Melee[m_iClient][m_iSlot]            = 0;
-            m_iEvasionAW2_PoA[m_iClient][m_iSlot]  = 0;
+            m_iEvasionAW2_PoA[m_iClient][m_iSlot]              = 0;
 
 
             /* On Damage Received
@@ -1533,19 +1533,19 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flInnerVitality_HealthHealBelow[m_iClient][m_iSlot]    = 0.0;
             m_flInnerVitality_HealthThreshold[m_iClient][m_iSlot]    = 0.0;
 
-            m_bWarCry_ATTRIBUTE[m_iClient][m_iSlot]                 = false;
-            m_flWarCry_DamageRes[m_iClient][m_iSlot]                = 0.0;
-            m_flWarCry_MoveSpeed[m_iClient][m_iSlot]                = 0.0;
-            m_flWarCry_Radius[m_iClient][m_iSlot]                   = 0.0;
-            m_flWarCry_Duration[m_iClient][m_iSlot]                 = 0.0;
-            m_flWarCry_Cooldown[m_iClient][m_iSlot]                 = 0.0;
+            m_bWarCry_ATTRIBUTE[m_iClient][m_iSlot]                  = false;
+            m_flWarCry_DamageRes[m_iClient][m_iSlot]                 = 0.0;
+            m_flWarCry_MoveSpeed[m_iClient][m_iSlot]                 = 0.0;
+            m_flWarCry_Radius[m_iClient][m_iSlot]                    = 0.0;
+            m_flWarCry_Duration[m_iClient][m_iSlot]                  = 0.0;
+            m_flWarCry_Cooldown[m_iClient][m_iSlot]                  = 0.0;
 
 
             /* On Death
              * ---------------------------------------------------------------------- */
 
-            m_bLastWill_ATTRIBUTE[m_iClient][m_iSlot]    = false;
-            m_iLastWill_Damage[m_iClient][m_iSlot]       = 0;
+            m_bLastWill_ATTRIBUTE[m_iClient][m_iSlot]           = false;
+            m_iLastWill_Damage[m_iClient][m_iSlot]              = 0;
 
             if ( m_bBloodstone_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
@@ -2072,10 +2072,13 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
             {
                 if ( m_hTimers[m_iVictim][m_hDuel_TimerDuration] != INVALID_HANDLE && m_iVictim != m_iKiller ) // Duel is active and the victim didn't suicide.
                 {
-                    if ( IsValidClient( g_pDuelist_Victim[m_iVictim] ) && m_bBools[g_pDuelist_Victim[m_iVictim]][m_bIsDuel_On] )
+                    if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Victim[m_iVictim] )
                     {
-                        m_flFloats[g_pDuelist_Victim[m_iVictim]][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
-                        m_bBools[g_pDuelist_Victim[m_iVictim]][m_bIsDuel_On] = false;
+                        if ( m_bBools[m_iKiller][m_bIsDuel_On] )
+                        {
+                            m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
+                            m_bBools[m_iKiller][m_bIsDuel_On] = false;
+                        }
                     }
 
                     ClearTimer( m_hTimers[m_iVictim][m_hDuel_TimerDuration] );
@@ -2088,10 +2091,13 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
         //-//
             if ( m_bBools[m_iVictim][m_bIsDuel_On] && m_iVictim != m_iKiller ) // Duel is active and the victim didn't suicide.
             {
-                if ( IsValidClient( g_pDuelist_Attacker[m_iVictim] ) && m_hTimers[g_pDuelist_Attacker[m_iVictim]][m_hDuel_TimerDuration] != INVALID_HANDLE && HasAttribute( g_pDuelist_Attacker[m_iVictim], _, m_bDuel_ATTRIBUTE ) )
+                if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Attacker[m_iVictim] )
                 {
-                    m_flFloats[g_pDuelist_Attacker[m_iVictim]][m_flDuel_Bonus] += GetAttributeValueF( g_pDuelist_Attacker[m_iVictim], _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
-                    ClearTimer( m_hTimers[g_pDuelist_Attacker[m_iVictim]][m_hDuel_TimerDuration] );
+                    if ( m_hTimers[m_iKiller][m_hDuel_TimerDuration] != INVALID_HANDLE )
+                    {
+                        m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iKiller, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
+                        ClearTimer( m_hTimers[m_iKiller][m_hDuel_TimerDuration] );
+                    }
                 }
                         
                 m_bBools[m_iVictim][m_bIsDuel_On] = false;
