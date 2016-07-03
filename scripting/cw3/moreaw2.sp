@@ -970,7 +970,7 @@ ATTRIBUTE_BONKHEALTH( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 // TO TEST. I DON'T WANT TO SET THE WORLD ON FIRE. PLZ REMIND ME, ANYONE.
 ATTRIBUTE_SPEEDCLOAK( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    if ( m_flFloats[m_iClient][m_flCloakSpeed] <= 0.0 ) m_flFloats[m_iClient][m_flCloakSpeed] = GetClientMovementSpeed( m_iClient ); // Stores the client's BASE movement speed if equal to 0.0
+    if ( m_flFloats[m_iClient][m_flCloakSpeed] <= 0.0 && !TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) && !TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) ) m_flFloats[m_iClient][m_flCloakSpeed] = GetClientMovementSpeed( m_iClient ); // Stores the client's BASE movement speed if equal to 0.0
 
     if ( TF2_IsPlayerInCondition( m_iClient, TFCond_Cloaked ) || TF2_IsPlayerInCondition( m_iClient, TFCond_Stealthed ) ) // Is client invis ?
     {
