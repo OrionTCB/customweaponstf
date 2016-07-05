@@ -87,8 +87,6 @@ new m_iIntegers[MAXPLAYERS + 1][m_iInteger];
 new bool:g_hPostInventory[MAXPLAYERS + 1]               = false;
 new g_iLastButtons[MAXPLAYERS+1]                        = -1;
 new g_iLastWeapon[MAXPLAYERS + 1]                       = -1;
-new g_pDuelist_Victim[MAXPLAYERS + 1]                   = -1; // Stores the duelist (victim)
-new g_pDuelist_Attacker[MAXPLAYERS + 1]                 = -1; // Stores the duelist (attacker)
 new Handle:g_hHudText_D2;
 
 
@@ -110,6 +108,8 @@ new bool:m_bDuel_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDuel_Cooldown[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDuel_DamageBonus[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDuel_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new g_pDuelist_Target[MAXPLAYERS + 1] = -1;                                 // Stores the duelist (target)
+new g_pDuelist_Caster[MAXPLAYERS + 1] = -1;                                 // Stores the duelist (caster)
 
 
     /* On Attack
@@ -322,25 +322,15 @@ public OnPluginEnd()
     {
         if ( IsClientInGame( i ) )
         {
-            for ( new e = 0; e < m_hTimer; e++ )
-            {
-                ClearTimer( m_hTimers[i][e] );
-            }
-            for ( new e = 0; e < m_bBool; e++ )
-            {
-                m_bBools[i][e]      = false;
-            }
-            for ( new e = 0; e < m_flFloat; e++ )
-            {
-                m_flFloats[i][e]    = 0.0;
-            }
-            for ( new e = 0; e < m_iInteger; e++ )
-            {
-                m_iIntegers[i][e]   = 0;
-            }
+            for ( new e = 0; e < m_hTimer; e++ )    ClearTimer( m_hTimers[i][e] );
+            for ( new e = 0; e < m_bBool; e++ )     m_bBools[i][e]      = false;
+            for ( new e = 0; e < m_flFloat; e++ )   m_flFloats[i][e]    = 0.0;
+            for ( new e = 0; e < m_iInteger; e++ )  m_iIntegers[i][e]   = 0;
+            for ( new e = 0; e <= 4; e++ )          CW3_OnWeaponRemoved( e, i );
+
             g_iLastWeapon[i]       = -1;
-            g_pDuelist_Victim[i]   = -1;
-            g_pDuelist_Attacker[i] = -1;
+            g_pDuelist_Target[i]   = -1;
+            g_pDuelist_Caster[i]   = -1;
         }
     }
 }
@@ -348,25 +338,15 @@ public OnPluginEnd()
 // ====[ ON CLIENT DISCONNECT ]========================================
 public OnClientDisconnect( m_iClient )
 {
-    for ( new i = 0; i < m_hTimer; i++ )
-    {
-        ClearTimer( m_hTimers[m_iClient][i] );
-    }
-    for ( new i = 0; i < m_bBool; i++ )
-    {
-        m_bBools[m_iClient][i]      = false;
-    }
-    for ( new i = 0; i < m_flFloat; i++ )
-    {
-        m_flFloats[m_iClient][i]    = 0.0;
-    }
-    for ( new i = 0; i < m_iInteger; i++ )
-    {
-        m_iIntegers[m_iClient][i]   = 0;
-    }
+    for ( new i = 0; i < m_hTimer; i++ )    ClearTimer( m_hTimers[m_iClient][i] );
+    for ( new i = 0; i < m_bBool; i++ )     m_bBools[m_iClient][i]      = false;
+    for ( new i = 0; i < m_flFloat; i++ )   m_flFloats[m_iClient][i]    = 0.0;
+    for ( new i = 0; i < m_iInteger; i++ )  m_iIntegers[m_iClient][i]   = 0;
+    for ( new i = 0; i <= 4; i++ )          CW3_OnWeaponRemoved( i, m_iClient );
+
     g_iLastWeapon[m_iClient]       = -1;
-    g_pDuelist_Victim[m_iClient]   = -1;
-    g_pDuelist_Attacker[m_iClient] = -1;
+    g_pDuelist_Target[m_iClient]   = -1;
+    g_pDuelist_Caster[m_iClient]   = -1;
 }
 
 // ====[ EVENT: ON ROUND RESTART ]=====================================
@@ -376,25 +356,15 @@ public Event_OnRoundRestart( Handle:m_hEvent, const String:m_strName[], bool:m_b
     {
         if ( IsClientInGame( i ) )
         {
-            for ( new e = 0; e < m_hTimer; e++ )
-            {
-                ClearTimer( m_hTimers[i][e] );
-            }
-            for ( new e = 0; e < m_bBool; e++ )
-            {
-                m_bBools[i][e]      = false;
-            }
-            for ( new e = 0; e < m_flFloat; e++ )
-            {
-                m_flFloats[i][e]    = 0.0;
-            }
-            for ( new e = 0; e < m_iInteger; e++ )
-            {
-                m_iIntegers[i][e]   = 0;
-            }
+            for ( new e = 0; e < m_hTimer; e++ )    ClearTimer( m_hTimers[i][e] );
+            for ( new e = 0; e < m_bBool; e++ )     m_bBools[i][e]      = false;
+            for ( new e = 0; e < m_flFloat; e++ )   m_flFloats[i][e]    = 0.0;
+            for ( new e = 0; e < m_iInteger; e++ )  m_iIntegers[i][e]   = 0;
+            for ( new e = 0; e <= 4; e++ )          CW3_OnWeaponRemoved( e, i );
+
             g_iLastWeapon[i]       = -1;
-            g_pDuelist_Victim[i]   = -1;
-            g_pDuelist_Attacker[i] = -1;
+            g_pDuelist_Target[i]   = -1;
+            g_pDuelist_Caster[i]   = -1;
         }
     }
 }
@@ -406,25 +376,15 @@ public Event_ChangeClass( Handle:m_hEvent, const String:m_strName[], bool:m_bDon
     
     if ( IsValidClient( m_iClient ) && IsPlayerAlive( m_iClient ) )
     {
-        for ( new i = 0; i < m_hTimer; i++ )
-        {
-            ClearTimer( m_hTimers[m_iClient][i] );
-        }
-        for ( new i = 0; i < m_bBool; i++ )
-        {
-            m_bBools[m_iClient][i]          = false;
-        }
-        for ( new i = 0; i < m_flFloat; i++ )
-        {
-            m_flFloats[m_iClient][i]        = 0.0;
-        }
-        for ( new i = 0; i < m_iInteger; i++ )
-        {
-            m_iIntegers[m_iClient][i]       = 0;
-        }
+        for ( new i = 0; i < m_hTimer; i++ )    ClearTimer( m_hTimers[m_iClient][i] );
+        for ( new i = 0; i < m_bBool; i++ )     m_bBools[m_iClient][i]      = false;
+        for ( new i = 0; i < m_flFloat; i++ )   m_flFloats[m_iClient][i]    = 0.0;
+        for ( new i = 0; i < m_iInteger; i++ )  m_iIntegers[m_iClient][i]   = 0;
+        for ( new i = 0; i <= 4; i++ )          CW3_OnWeaponRemoved( i, m_iClient );
+
         g_iLastWeapon[m_iClient]       = -1;
-        g_pDuelist_Victim[m_iClient]   = -1;
-        g_pDuelist_Attacker[m_iClient] = -1;
+        g_pDuelist_Target[m_iClient]   = -1;
+        g_pDuelist_Caster[m_iClient]   = -1;
     }
 
     return;
@@ -506,7 +466,6 @@ public OnPreThink( m_iClient )
         m_iSlot2 = GetArrayCell( hArray, i );
         m_iButtons = ATTRIBUTE_ENCHANTTOTEM( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_ENRAGE( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
-        m_iButtons = ATTRIBUTE_FERVOR( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_INNERVITALITY( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_OVERPOWER( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_WARCRY( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
@@ -573,32 +532,6 @@ ATTRIBUTE_OVERPOWER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             {
                 ClearTimer( m_hTimers[m_iClient][m_hOverPower_TimerDuration] );
                 TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            }
-        }
-    }
-
-    return m_iButtons;
-}
-
-ATTRIBUTE_FERVOR( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
-{
-    if ( HasAttribute( m_iClient, _, m_bFervor_ATTRIBUTE, true ) )
-    {
-        new Float:old_as = GetAttributeValueF( m_iClient, _, m_bFervor_ATTRIBUTE, m_flFervor_OldAttackSpeed, true );
-
-        new m_iWeapon = TF2_GetClientActiveWeapon( m_iClient );
-
-        if ( m_iIntegers[m_iClient][m_iFervor_Stack] <= 0 ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-        else {
-            if ( !( TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" ) ) ) TF2Attrib_SetByName( m_iWeapon, "fire rate bonus", old_as );
-            new Float:m_flAttackSpeed;
-            new Address:m_aAttribute = TF2Attrib_GetByName( m_iWeapon, "fire rate bonus" );
-            if ( m_aAttribute != Address_Null ) {
-                m_flAttackSpeed = TF2Attrib_GetValue( m_aAttribute );
-            }
-            
-            for ( new i = 0 ; i <= 2 ; i++ ) {
-                if ( HasAttribute( m_iClient, i, m_bFervor_ATTRIBUTE ) ) AttackSpeedLimit( m_iClient, m_iWeapon, i, m_flAttackSpeed );
             }
         }
     }
@@ -813,34 +746,34 @@ ATTRIBUTE_DUEL( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 }
             }
         }
-        // No need for g_pDuelist_Attacker[x] as the attacker IS the client.
-        if ( m_hTimers[m_iClient][m_hDuel_TimerDuration] != INVALID_HANDLE && IsValidClient( g_pDuelist_Victim[m_iClient] ) && IsPlayerAlive( g_pDuelist_Victim[m_iClient] ) && m_bBools[g_pDuelist_Victim[m_iClient]][m_bIsDuel_On] )
+        // No need for g_pDuelist_Caster[x] as the attacker IS the client.
+        if ( m_hTimers[m_iClient][m_hDuel_TimerDuration] != INVALID_HANDLE && IsValidClient( g_pDuelist_Target[m_iClient] ) && IsPlayerAlive( g_pDuelist_Target[m_iClient] ) && m_bBools[g_pDuelist_Target[m_iClient]][m_bIsDuel_On] )
         {
             new Float:duration = GetAttributeValueF( m_iClient, _, m_bDuel_ATTRIBUTE, m_flDuel_Duration );
 
             new m_iWeaponA = TF2_GetClientActiveWeapon( m_iClient );
             SetEntPropFloat( m_iWeaponA, Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+duration );
-            new m_iWeaponV = TF2_GetClientActiveWeapon( g_pDuelist_Victim[m_iClient] );
+            new m_iWeaponV = TF2_GetClientActiveWeapon( g_pDuelist_Target[m_iClient] );
             SetEntPropFloat( m_iWeaponV, Prop_Send, "m_flNextSecondaryAttack", GetGameTime()+duration );
 
             new Float:m_flPos1[3];
             GetClientEyePosition( m_iClient, m_flPos1 );
             new Float:m_flPos2[3];
-            GetClientEyePosition( g_pDuelist_Victim[m_iClient], m_flPos2 );
+            GetClientEyePosition( g_pDuelist_Target[m_iClient], m_flPos2 );
             new Float:m_flCam1[3], Float:m_flCam2[3];
 
             GetVectorAnglesTwoPoints( m_flPos1, m_flPos2, m_flCam1 );
             GetVectorAnglesTwoPoints( m_flPos2, m_flPos1, m_flCam2 );
 
             TeleportEntity( m_iClient, NULL_VECTOR, m_flCam1, NULL_VECTOR );
-            TeleportEntity( g_pDuelist_Victim[m_iClient], NULL_VECTOR, m_flCam2, NULL_VECTOR );
+            TeleportEntity( g_pDuelist_Target[m_iClient], NULL_VECTOR, m_flCam2, NULL_VECTOR );
 
             if ( m_iButtons & IN_BACK ) m_iButtons &= ~IN_BACK;
         }
-        else if ( m_hTimers[m_iClient][m_hDuel_TimerDuration] == INVALID_HANDLE && IsValidClient( g_pDuelist_Victim[m_iClient] ) )
+        else if ( m_hTimers[m_iClient][m_hDuel_TimerDuration] == INVALID_HANDLE && IsValidClient( g_pDuelist_Target[m_iClient] ) )
         {
-            m_bBools[g_pDuelist_Victim[m_iClient]][m_bIsDuel_On] = false;
-            g_pDuelist_Victim[m_iClient] = -1;
+            m_bBools[g_pDuelist_Target[m_iClient]][m_bIsDuel_On] = false;
+            g_pDuelist_Target[m_iClient] = -1;
         }
     }
 
@@ -1377,6 +1310,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 
             if ( m_bFervor_ATTRIBUTE[m_iClient][m_iSlot] && IsValidEdict( weapon ) && IsValidEntity( weapon ) )
             {
+                m_iIntegers[m_iClient][m_iFervor_Stack] = 0;
                 TF2Attrib_RemoveByName( weapon, "fire rate bonus" );
             }
             m_bFervor_ATTRIBUTE[m_iClient][m_iSlot]          = false;
@@ -1826,10 +1760,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                 m_flDamage *= GetAttributeValueF( m_iVictim, _, m_bWarCry_ATTRIBUTE, m_flWarCry_DamageRes );
             }
         }
-        if ( IsValidClient( m_iAttacker )
-            && m_iAttacker != m_iVictim
-            && GetClientTeam( m_iAttacker ) != GetClientTeam (m_iVictim )
-            && m_flDamage >= 1.0 )
+        if ( IsValidClient( m_iAttacker ) )
         {
             /* Desolator, increases player's damage.
              *
@@ -1960,10 +1891,11 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                     if ( IsValidClient( m_iOldVictim ) && m_iOldVictim != m_iVictim ) m_bBools[m_iOldVictim][m_bIsFervor_On] = false;
 
                     m_bBools[m_iVictim][m_bIsFervor_On] = true;
-                    m_iIntegers[m_iAttacker][m_iFervor_Stack] = 1;
                     TF2Attrib_SetByName( m_iWeapon3, "fire rate bonus", m_flFervor_OldAttackSpeed[m_iAttacker][m_iSlot] );
+                    m_iIntegers[m_iAttacker][m_iFervor_Stack] = 1;
                     m_iOldVictim = m_iVictim;
                 }
+                AttackSpeedLimit( m_iAttacker, m_iWeapon, m_iSlot, m_flAttackSpeed );
             }
         //-//
             if ( m_bEvasionAW2_ATTRIBUTE[m_iAttacker][m_iSlot] )
@@ -1987,8 +1919,8 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                         m_hTimers[m_iAttacker][m_hDuel_TimerDuration] = CreateTimer( m_flDuel_Duration[m_iAttacker][m_iSlot], m_tDuel_Duration, m_iAttacker );
                     m_bBools[m_iVictim][m_bIsDuel_On] = true;
 
-                    g_pDuelist_Victim[m_iAttacker] = m_iVictim;
-                    g_pDuelist_Attacker[m_iVictim] = m_iAttacker;
+                    g_pDuelist_Target[m_iAttacker] = m_iVictim;
+                    g_pDuelist_Caster[m_iVictim] = m_iAttacker;
                 }
             }
         //-//
@@ -2072,39 +2004,41 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
             {
                 if ( m_hTimers[m_iVictim][m_hDuel_TimerDuration] != INVALID_HANDLE && m_iVictim != m_iKiller ) // Duel is active and the victim didn't suicide.
                 {
-                    if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Victim[m_iVictim] )
+                    if ( IsValidClient( g_pDuelist_Target[m_iVictim] ) )
                     {
-                        if ( m_bBools[m_iKiller][m_bIsDuel_On] )
+                        if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Target[m_iVictim] )
                         {
-                            m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
-                            m_bBools[m_iKiller][m_bIsDuel_On] = false;
+                            if ( m_bBools[m_iKiller][m_bIsDuel_On] )
+                                m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iVictim, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
                         }
+                        ClearTimer( m_hTimers[g_pDuelist_Target[m_iVictim]][m_hDuel_TimerDuration] );
                     }
 
-                    ClearTimer( m_hTimers[m_iVictim][m_hDuel_TimerDuration] );
-                    g_pDuelist_Victim[m_iVictim]   = -1;
-                    g_pDuelist_Attacker[m_iKiller] = -1;
-                    // HERE, g_pDuelist_Victim[m_iVictim] IS THE WINNER.
-                    // AND, m_iVictim IS THE LOSER.
+                    m_bBools[m_iKiller][m_bIsDuel_On] = false;
+                    g_pDuelist_Target[m_iVictim]      = -1;
+                    g_pDuelist_Caster[m_iKiller]      = -1;
+                    // HERE, g_pDuelist_Target[m_iVictim] IS THE WINNER     == m_iKller.
+                    // AND, m_iVictim IS THE LOSER                          == g_pDuelist_Caster[m_iKiller].
                 }
             }
         //-//
             if ( m_bBools[m_iVictim][m_bIsDuel_On] && m_iVictim != m_iKiller ) // Duel is active and the victim didn't suicide.
             {
-                if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Attacker[m_iVictim] )
+                if ( IsValidClient( g_pDuelist_Caster[m_iVictim] ) )
                 {
-                    if ( m_hTimers[m_iKiller][m_hDuel_TimerDuration] != INVALID_HANDLE )
+                    if ( IsValidClient( m_iKiller ) && m_iKiller == g_pDuelist_Caster[m_iVictim] )
                     {
-                        m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iKiller, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
-                        ClearTimer( m_hTimers[m_iKiller][m_hDuel_TimerDuration] );
+                        if ( m_hTimers[m_iKiller][m_hDuel_TimerDuration] != INVALID_HANDLE )
+                            m_flFloats[m_iKiller][m_flDuel_Bonus] += GetAttributeValueF( m_iKiller, _, m_bDuel_ATTRIBUTE, m_flDuel_DamageBonus );
                     }
+                    ClearTimer( m_hTimers[g_pDuelist_Caster[m_iVictim]][m_hDuel_TimerDuration] );
                 }
-                        
+                
                 m_bBools[m_iVictim][m_bIsDuel_On] = false;
-                g_pDuelist_Victim[m_iKiller]      = -1;
-                g_pDuelist_Attacker[m_iVictim]    = -1;
-                // HERE, m_iVictim IS THE LOSER.
-                // AND, g_pDuelist_Attacker[m_iVictim] IS THE WINNER.
+                g_pDuelist_Target[m_iKiller]      = -1;
+                g_pDuelist_Caster[m_iVictim]      = -1;
+                // HERE, m_iVictim IS THE LOSER                             == g_pDuelist_Target[m_iKiller].
+                // AND, g_pDuelist_Caster[m_iVictim] IS THE WINNER          == m_iKiller.
             }
         //-//
             if ( HasAttribute( m_iVictim, _, m_bBloodstone_ATTRIBUTE ) )
@@ -2207,8 +2141,8 @@ public Action:Event_Death( Handle:m_hEvent, const String:m_strName[], bool:m_bDo
 
                         ClearTimer( m_hTimers[m_iKiller][m_hDuel_TimerDuration] );
                         m_bBools[m_iVictim][m_bIsDuel_On] = false;
-                        g_pDuelist_Victim[m_iKiller] = -1;
-                        // Here, g_pDuelist_Victim[m_iKiller] IS THE VICTIM.
+                        g_pDuelist_Target[m_iKiller] = -1;
+                        // Here, g_pDuelist_Target[m_iKiller] IS THE VICTIM.
                         // And, m_iKiller IS THE KILLER.
                     }
                 }
@@ -2433,11 +2367,11 @@ public Action:m_tDuel_Duration( Handle:timer, any:m_iClient )
             PrintHintText( m_iClient, "Custom: Duel done." );
             EmitSoundToClient( m_iClient, SOUND_NOTREADY );
         }
-        m_bBools[g_pDuelist_Victim[m_iClient]][m_bIsDuel_On] = false;
-        g_pDuelist_Attacker[g_pDuelist_Victim[m_iClient]]    = -1;
-        g_pDuelist_Victim[m_iClient]                         = -1;
+        m_bBools[g_pDuelist_Target[m_iClient]][m_bIsDuel_On] = false;
+        g_pDuelist_Caster[g_pDuelist_Target[m_iClient]]    = -1;
+        g_pDuelist_Target[m_iClient]                         = -1;
 
-        // g_pDuelist_Victim[m_iClient] = victim.
+        // g_pDuelist_Target[m_iClient] = victim.
         // m_iClient = attacker.
     }
 
