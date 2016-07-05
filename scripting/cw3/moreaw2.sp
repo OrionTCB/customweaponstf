@@ -331,26 +331,13 @@ public OnPluginEnd()
     {
         if ( IsClientInGame( i ) )
         {
-            for ( new e = 0; e < m_hTimer; e++ )
-            {
-                ClearTimer( m_hTimers[i][e] );
-            }
-            for ( new e = 0; e < m_bBool; e++ )
-            {
-                m_bBools[i][e]              = false;
-            }
-            for ( new e = 0; e < m_flFloat; e++ )
-            {
-                m_flFloats[i][e]            = 0.0;
-            }
-            for ( new e = 0; e < m_iInteger; e++ )
-            {
-                m_iIntegers[i][e]           = 0;
-            }
-            for ( new e = 0; e < MAXSLOTS; e++ )
-            {
-                m_bSlotDisabled[i][e]       = false;
-            }
+            for ( new e = 0; e < m_hTimer; e++ )    ClearTimer( m_hTimers[i][e] );
+            for ( new e = 0; e < m_bBool; e++ )     m_bBools[i][e]          = false;
+            for ( new e = 0; e < m_flFloat; e++ )   m_flFloats[i][e]        = 0.0;
+            for ( new e = 0; e < m_iInteger; e++ )  m_iIntegers[i][e]       = 0;
+            for ( new e = 0; e < MAXSLOTS; e++ )    m_bSlotDisabled[i][e]   = false;
+            for ( new e = 0; e <= 4; e++ )          CW3_OnWeaponRemoved( e, i );
+
             g_iLastWeapon[i]  = -1;
             g_pMarker[i]      = -1;
             s_bGlowEnabled[i] = false;
@@ -362,26 +349,13 @@ public OnPluginEnd()
 // ====[ ON CLIENT DISCONNECT ]========================================
 public OnClientDisconnect( m_iClient )
 {
-    for ( new i = 0; i < m_hTimer; i++ )
-    {
-        ClearTimer( m_hTimers[m_iClient][i] );
-    }
-    for ( new i = 0; i < m_flFloat; i++ )
-    {
-        m_flFloats[m_iClient][i]    = 0.0;
-    }
-    for ( new i = 0; i < m_bBool; i++ )
-    {
-        m_bBools[m_iClient][i]      = false;
-    }
-    for ( new i = 0; i < m_iInteger; i++ )
-    {
-        m_iIntegers[m_iClient][i]   = 0;
-    }
-    for ( new i = 0; i < MAXSLOTS; i++ )
-    {
-        m_bSlotDisabled[m_iClient][i] = false;
-    }
+    for ( new i = 0; i < m_hTimer; i++ )    ClearTimer( m_hTimers[m_iClient][i] );
+    for ( new i = 0; i < m_bBool; i++ )     m_bBools[m_iClient][i]          = false;
+    for ( new i = 0; i < m_flFloat; i++ )   m_flFloats[m_iClient][i]        = 0.0;
+    for ( new i = 0; i < m_iInteger; i++ )  m_iIntegers[m_iClient][i]       = 0;
+    for ( new i = 0; i < MAXSLOTS; i++ )    m_bSlotDisabled[m_iClient][i]   = false;
+    for ( new i = 0; i <= 4; i++ )          CW3_OnWeaponRemoved( i, m_iClient );
+
     g_iLastWeapon[m_iClient]  = -1;
     g_pMarker[m_iClient]      = -1;
     s_bGlowEnabled[m_iClient] = false;
@@ -394,26 +368,16 @@ public Event_OnRoundRestart( Handle:m_hEvent, const String:m_strName[], bool:m_b
     {
         if ( IsClientInGame( i ) )
         {
-            for ( new e = 0; e < m_hTimer; e++ )
-            {
-                ClearTimer( m_hTimers[i][e] );
-            }
-            for ( new e = 0; e < m_bBool; e++ )
-            {
-                m_bBools[i][e]      = false;
-            }
-            for ( new e = 0; e < m_flFloat; e++ )
-            {
-                m_flFloats[i][e]    = 0.0;
-            }
-            for ( new e = 0; e < m_iInteger; e++ )
-            {
-                m_iIntegers[i][e]   = 0;
-            }
+            for ( new e = 0; e < m_hTimer; e++ )    ClearTimer( m_hTimers[i][e] );
+            for ( new e = 0; e < m_bBool; e++ )     m_bBools[i][e]          = false;
+            for ( new e = 0; e < m_flFloat; e++ )   m_flFloats[i][e]        = 0.0;
+            for ( new e = 0; e < m_iInteger; e++ )  m_iIntegers[i][e]       = 0;
+            for ( new e = 0; e < MAXSLOTS; e++ )    m_bSlotDisabled[i][e]   = false;
+            for ( new e = 0; e <= 4; e++ )          CW3_OnWeaponRemoved( e, i );
+
             g_iLastWeapon[i]  = -1;
             g_pMarker[i]      = -1;
             s_bGlowEnabled[i] = false;
-            SetEntProp( i, Prop_Send, "m_bGlowEnabled", 0 );
         }
     }
 }
@@ -425,26 +389,15 @@ public Event_ChangeClass( Handle:m_hEvent, const String:m_strName[], bool:m_bDon
     
     if ( IsValidClient( m_iClient ) && IsPlayerAlive( m_iClient ) )
     {
-        for ( new i = 0; i < m_hTimer; i++ )
-        {
-            ClearTimer( m_hTimers[m_iClient][i] );
-        }
-        for ( new i = 0; i < m_bBool; i++ )
-        {
-            m_bBools[m_iClient][i]          = false;
-        }
-        for ( new i = 0; i < m_flFloat; i++ )
-        {
-            m_flFloats[m_iClient][i]        = 0.0;
-        }
-        for ( new i = 0; i < m_iInteger; i++ )
-        {
-            m_iIntegers[m_iClient][i]       = 0;
-        }
-        if ( s_bGlowEnabled[m_iClient] ) {
-            s_bGlowEnabled[m_iClient] = false;
-            SetEntProp( m_iClient, Prop_Send, "m_bGlowEnabled", 0 );
-        }
+        for ( new i = 0; i < m_hTimer; i++ )    ClearTimer( m_hTimers[m_iClient][i] );
+        for ( new i = 0; i < m_bBool; i++ )     m_bBools[m_iClient][i]          = false;
+        for ( new i = 0; i < m_flFloat; i++ )   m_flFloats[m_iClient][i]        = 0.0;
+        for ( new i = 0; i < m_iInteger; i++ )  m_iIntegers[m_iClient][i]       = 0;
+        for ( new i = 0; i < MAXSLOTS; i++ )    m_bSlotDisabled[m_iClient][i]   = false;
+        for ( new i = 0; i <= 4; i++ )          CW3_OnWeaponRemoved( i, m_iClient );
+
+        s_bGlowEnabled[m_iClient] = false;
+        SetEntProp( m_iClient, Prop_Send, "m_bGlowEnabled", 0 );
         g_pMarker[m_iClient]     = -1;
         g_iLastWeapon[m_iClient] = -1;
     }
@@ -2105,10 +2058,10 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                         /* Sets.
                          *
                          * -------------------------------------------------- */
-                        if ( m_bNoBackstab_ATTRIBUTE[m_iAttacker][m_iSlot] && TF2_GetPlayerClass( m_iAttacker ) == TFClass_Spy && m_iCustom == TF_CUSTOM_BACKSTAB )
+                        if ( m_bNoBackstab_ATTRIBUTE[m_iAttacker][m_iSlot] && m_iCustom == TF_CUSTOM_BACKSTAB )
                         {
                             if ( m_iNoBackstab_Crit[m_iAttacker][m_iSlot] == 0 ) m_iType = TF_DMG_MELEE;
-                            else m_iType = TF_DMG_MELEE|TF_DMG_CRIT;
+                            else m_iType = TF_DMG_MELEE_CRIT;
                             m_flDamage = m_flNoBackstab_Damage[m_iAttacker][m_iSlot];
                         }
 
