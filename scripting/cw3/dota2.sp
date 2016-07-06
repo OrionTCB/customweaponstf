@@ -1652,7 +1652,10 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                     //-//
                         if ( m_bBurningSpear_ATTRIBUTE[m_iAttacker][m_iSlot] )
                         {
-                            if ( m_iType & TF_DMG_AFTERBURN == TF_DMG_AFTERBURN ) m_flDamage += ( m_iIntegers[m_iVictim][m_iBSpear_Stack] * m_flBurningSpear_Damage[m_iAttacker][m_iSlot] );
+                            if ( m_iType & TF_DMG_AFTERBURN == TF_DMG_AFTERBURN ) {
+                                if ( m_iIntegers[m_iVictim][m_iBSpear_Stack] >= 2 )
+                                    m_flDamage += ( ( m_iIntegers[m_iVictim][m_iBSpear_Stack] - 1 ) * m_flBurningSpear_Damage[m_iAttacker][m_iSlot] );
+                            }
                             else {
                                 m_iIntegers[m_iVictim][m_iBSpear_Stack]++;
                                 if ( m_iIntegers[m_iVictim][m_iBSpear_Stack] > m_iBurningSpear_MaxStack[m_iAttacker][m_iSlot] )
@@ -1969,6 +1972,17 @@ public Action:TF2_CalcIsAttackCritical( m_iClient, m_iWeapon, String:m_strName[]
         }
     }
     return Plugin_Continue;
+}
+
+// ====[ ON CONDITION REMOVED ]========================================
+public TF2_OnConditionRemoved( m_iClient, TFCond:condition )
+{
+    if ( IsValidClient( m_iClient ) )
+    {
+        if ( m_iIntegers[m_iClient][m_iBSpear_Stack] != 0 ) {
+            if ( condition == TFCond_OnFire ) m_iIntegers[m_iClient][m_iBSpear_Stack] = 0;
+        }
+    }
 }
 
 // ====[ EVENT: ON DEATH ]=============================================
