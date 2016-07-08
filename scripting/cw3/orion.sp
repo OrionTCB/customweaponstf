@@ -1221,15 +1221,15 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    new String:m_strHUDAttackSpeedOnKill[64];
-    new String:m_strHUDDamageReceivedUnleashedDeath[64];
-    new String:m_strHUDDamageResHpMissing[64];
-    new String:m_strHUDHeatDMGTaken[64];
-    new String:m_strHUDHeatFireRate[64];
-    new String:m_strHUDMissDecreasesFireRate[64];
-    new String:m_strHUDPsycho[64];
-    new String:m_strHUDSteal[64];
-    new String:m_strHUDDamageChargeThing[64];
+    new String:m_strHUDAttackSpeedOnKill[16];
+    new String:m_strHUDDamageReceivedUnleashedDeath[16];
+    new String:m_strHUDDamageResHpMissing[24];
+    new String:m_strHUDHeatDMGTaken[16];
+    new String:m_strHUDHeatFireRate[16];
+    new String:m_strHUDMissDecreasesFireRate[16];
+    new String:m_strHUDPsycho[16];
+    new String:m_strHUDSteal[24];
+    new String:m_strHUDDamageChargeThing[16];
 
     if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
     {
@@ -1267,13 +1267,11 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         }
     }
 //-//
-    if ( HasAttribute( m_iClient, _, m_bPsycho_ATTRIBUTE ) ) {
-        Format( m_strHUDPsycho, sizeof( m_strHUDPsycho ), "Rampage %.0f %", m_flFloats[m_iClient][m_flPyschoCharge] );
-    }
+    if ( HasAttribute( m_iClient, _, m_bPsycho_ATTRIBUTE ) )
+        Format( m_strHUDPsycho, sizeof( m_strHUDPsycho ), "Rampage %.0f%%", m_flFloats[m_iClient][m_flPyschoCharge] );
 //-//
-    if ( HasAttribute( m_iClient, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE ) ) {
+    if ( HasAttribute( m_iClient, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE ) )
         Format( m_strHUDDamageReceivedUnleashedDeath, sizeof( m_strHUDDamageReceivedUnleashedDeath ), "Damage %.0f", m_flFloats[m_iClient][m_flDamageReceived] );
-    }
 //-//
     if ( HasAttribute( m_iClient, _, m_bDamageResHealthMissing_ATTRIBUTE ) )
     {
@@ -1290,16 +1288,14 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
     }
 //-//
     if ( m_iIntegers[m_iClient][m_iStealDamageVictim] > 1 || m_iIntegers[m_iClient][m_iStealDamageAttacker] > 1 )
-    {
         Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen %i", m_iIntegers[m_iClient][m_iStealDamageAttacker] - m_iIntegers[m_iClient][m_iStealDamageVictim] );
-    }
 //-//
     if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
     {
         new String:m_sState[7];
         ( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
 
-        Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
+        Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f%%%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
     }
 //-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
