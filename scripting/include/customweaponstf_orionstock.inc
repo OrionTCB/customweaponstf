@@ -521,7 +521,7 @@ stock Float:GetClassBaseMovementSpeed( client )
     if ( IsValidClient( client ) && IsPlayerAlive( client ) )
     {
         if ( TF2_GetPlayerClass( client ) == TFClass_Scout ) return 400.0; 
-        if ( TF2_GetPlayerClass( client ) == TFClass_Medic ) return 320.0; 
+        if ( TF2_GetPlayerClass( client ) == TFClass_Medic || TF2_GetPlayerClass( client ) == TFClass_Spy ) return 320.0; 
         if ( TF2_GetPlayerClass( client ) == TFClass_DemoMan ) return 280.0; 
         if ( TF2_GetPlayerClass( client ) == TFClass_Soldier ) return 240.0; 
         if ( TF2_GetPlayerClass( client ) == TFClass_Heavy ) return 230.0; 
