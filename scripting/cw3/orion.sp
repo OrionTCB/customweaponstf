@@ -43,9 +43,6 @@ enum
 	Handle:m_hHeatFireRate_TimerDelay,
 	Handle:m_hHeatDamage_TimerDelay,
 	Handle:m_hDamageChargeThing_Enabled,
-	/*
-	Handle:m_hSPEEDTIMER_SPECIAL,                               [ FOR LATER, OR NEVER, IDK, DOESN'T WORK ON VALVE'S WEAPON, BULLSHIT. ]
-	*/
 	Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
@@ -1207,42 +1204,34 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 	if ( !HasAttribute( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE ) ) {
 		if ( !g_hPostInventory[m_iClient] && IsPlayerAlive( m_iClient ) ) m_iIntegers[m_iClient][m_iAttackSpeed] = 0;
 	}
-	/*
-	if ( m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] == INVALID_HANDLE ) {
-		PrintToChat( m_iClient, "Ohayo Gozaimasu - %.0f - %.0f - %.0f", GetClassBaseMovementSpeed( m_iClient ),
-																		GetClientMovementSpeedAttributes( m_iClient ),
-																		GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
-		m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] = CreateTimer( 5.0, m_tSPEEDTIMER, m_iClient );
-	}
-	*/
 
 	return m_iButtons;
 }
 
 HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-	new String:m_strHUDAttackSpeedOnKill[16];
-	new String:m_strHUDDamageReceivedUnleashedDeath[16];
-	new String:m_strHUDDamageResHpMissing[24];
-	new String:m_strHUDHeatDMGTaken[16];
-	new String:m_strHUDHeatFireRate[16];
-	new String:m_strHUDMissDecreasesFireRate[16];
-	new String:m_strHUDPsycho[16];
-	new String:m_strHUDSteal[24];
-	new String:m_strHUDDamageChargeThing[16];
+	new String:m_strHUDAttackSpeedOnKill[17];
+	new String:m_strHUDDamageReceivedUnleashedDeath[17];
+	new String:m_strHUDDamageResHpMissing[25];
+	new String:m_strHUDHeatDMGTaken[17];
+	new String:m_strHUDHeatFireRate[17];
+	new String:m_strHUDMissDecreasesFireRate[17];
+	new String:m_strHUDPsycho[17];
+	new String:m_strHUDSteal[25];
+	new String:m_strHUDDamageChargeThing[17];
 
 	if ( HasAttribute( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, true ) )
 	{
 		new max = GetAttributeValueI( m_iClient, _, m_bHeatFireRate_ATTRIBUTE, m_iHeatFireRate_MaximumStack, true );
 
-		Format( m_strHUDHeatFireRate, sizeof( m_strHUDHeatFireRate ), "Heat %i/%i", m_iIntegers[m_iClient][m_iHeat], max );
+		Format( m_strHUDHeatFireRate, sizeof( m_strHUDHeatFireRate ), "Heat: %i/%i", m_iIntegers[m_iClient][m_iHeat], max );
 	}
 //-//
 	if ( HasAttribute( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, true ) )
 	{
 		new max = GetAttributeValueI( m_iClient, _, m_bHeatDMGTaken_ATTRIBUTE, m_iHeatDMGTaken_MaximumStack, true );
 
-		Format( m_strHUDHeatDMGTaken, sizeof( m_strHUDHeatDMGTaken ), "Heat %i/%i", m_iIntegers[m_iClient][m_iHeatToo], max );
+		Format( m_strHUDHeatDMGTaken, sizeof( m_strHUDHeatDMGTaken ), "Heat: %i/%i", m_iIntegers[m_iClient][m_iHeatToo], max );
 	}
 //-//
 	if ( HasAttribute( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE, true ) )
@@ -1250,9 +1239,9 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 		new max = GetAttributeValueI( m_iClient, _, m_bAttackSpeedOnKill_ATTRIBUTE, m_iAttackSpeedOnKill_MaximumStack, true );
 
 		if ( max >= 1024 ) {
-			Format( m_strHUDAttackSpeedOnKill, sizeof( m_strHUDAttackSpeedOnKill ), "Kills %i", m_iIntegers[m_iClient][m_iAttackSpeed] );
+			Format( m_strHUDAttackSpeedOnKill, sizeof( m_strHUDAttackSpeedOnKill ), "Kills: %i", m_iIntegers[m_iClient][m_iAttackSpeed] );
 		} else {
-			Format( m_strHUDAttackSpeedOnKill, sizeof( m_strHUDAttackSpeedOnKill ), "Kills %i/%i", m_iIntegers[m_iClient][m_iAttackSpeed], max );
+			Format( m_strHUDAttackSpeedOnKill, sizeof( m_strHUDAttackSpeedOnKill ), "Kills: %i/%i", m_iIntegers[m_iClient][m_iAttackSpeed], max );
 		}
 	}
 //-//
@@ -1261,17 +1250,17 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 		new max = GetAttributeValueI( m_iClient, _, m_bMCFRTD_ATTRIBUTE, m_iMCFRTD_MaximumStack, true );
 
 		if ( max >= 1024 ) {
-			Format( m_strHUDMissDecreasesFireRate, sizeof( m_strHUDMissDecreasesFireRate ), "Miss %i", m_iIntegers[m_iClient][m_iMissStack] );
+			Format( m_strHUDMissDecreasesFireRate, sizeof( m_strHUDMissDecreasesFireRate ), "Miss: %i", m_iIntegers[m_iClient][m_iMissStack] );
 		} else {
-			Format( m_strHUDMissDecreasesFireRate, sizeof( m_strHUDMissDecreasesFireRate ), "Miss %i/%i", m_iIntegers[m_iClient][m_iMissStack], max );
+			Format( m_strHUDMissDecreasesFireRate, sizeof( m_strHUDMissDecreasesFireRate ), "Miss: %i/%i", m_iIntegers[m_iClient][m_iMissStack], max );
 		}
 	}
 //-//
 	if ( HasAttribute( m_iClient, _, m_bPsycho_ATTRIBUTE ) )
-		Format( m_strHUDPsycho, sizeof( m_strHUDPsycho ), "Rampage %.0f%%", m_flFloats[m_iClient][m_flPyschoCharge] );
+		Format( m_strHUDPsycho, sizeof( m_strHUDPsycho ), "Rampage: %.0f%%", m_flFloats[m_iClient][m_flPyschoCharge] );
 //-//
 	if ( HasAttribute( m_iClient, _, m_bDamageReceivedUnleashedDeath_ATTRIBUTE ) )
-		Format( m_strHUDDamageReceivedUnleashedDeath, sizeof( m_strHUDDamageReceivedUnleashedDeath ), "Damage %.0f", m_flFloats[m_iClient][m_flDamageReceived] );
+		Format( m_strHUDDamageReceivedUnleashedDeath, sizeof( m_strHUDDamageReceivedUnleashedDeath ), "Damage: %.0f", m_flFloats[m_iClient][m_flDamageReceived] );
 //-//
 	if ( HasAttribute( m_iClient, _, m_bDamageResHealthMissing_ATTRIBUTE ) )
 	{
@@ -1284,18 +1273,18 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 		new Float:m_flResPct = resphp * m_flMHP;
 		if ( m_flMHP * 100.0 > max ) m_flResPct = resphp * FloatDiv( max+0.0, 100.0 );
 
-		Format( m_strHUDDamageResHpMissing, sizeof( m_strHUDDamageResHpMissing ), "Resistance %.0f%%", m_flResPct*100.0 );
+		Format( m_strHUDDamageResHpMissing, sizeof( m_strHUDDamageResHpMissing ), "Resistance: %.0f%%", m_flResPct*100.0 );
 	}
 //-//
 	if ( m_flFloats[m_iClient][m_flStealDamageVictim] > 1 || m_flFloats[m_iClient][m_flStealDamageAttacker] > 1 )
-		Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen %i", m_flFloats[m_iClient][m_flStealDamageAttacker] - m_flFloats[m_iClient][m_flStealDamageVictim] );
+		Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen: %i", m_flFloats[m_iClient][m_flStealDamageAttacker] - m_flFloats[m_iClient][m_flStealDamageVictim] );
 //-//
 	if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
 	{
 		new String:m_sState[7];
 		( m_bBools[m_iClient][m_bDamageChargeThing_Enable] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
 
-		Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge %.0f%%%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
+		Format( m_strHUDDamageChargeThing, sizeof( m_strHUDDamageChargeThing ), "Charge: %.0f%%%s", m_flFloats[m_iClient][m_flDamageCharge], m_sState );
 	}
 //-//
 	if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
@@ -4048,14 +4037,6 @@ public Action:m_tStealDamageVictim( Handle:timer, any:m_iVictim )
 }
 public Action:m_tStunLock( Handle:timer, any:m_iVictim ) m_hTimers[m_iVictim][m_hStunlock_TimerDelay] = INVALID_HANDLE;
 public Action:m_tChargeDamageThing( Handle:timer, any:m_iClient ) m_hTimers[m_iClient][m_hDamageChargeThing_Enabled] = INVALID_HANDLE;
-/*
-public Action:m_tSPEEDTIMER( Handle:timer, any:m_iClient ) 
-{
-	//SetClientMovementSpeed( m_iClient, GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
-	
-	m_hTimers[m_iClient][m_hSPEEDTIMER_SPECIAL] = INVALID_HANDLE;
-}
-*/
 // Super Timer
 public Action:m_tPostInventory( Handle:timer, any:m_iClient ) g_hPostInventory[m_iClient] = false;
 
