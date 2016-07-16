@@ -210,7 +210,7 @@ stock DealDamage( victim, damage, attacker = 0, dmg_type = HL_DMG_GENERIC, Strin
                 DispatchKeyValue( pointHurt, "classname", logname ); 
             }
             DispatchSpawn( pointHurt ); 
-            AcceptEntityInput( pointHurt, "Hurt", ( attacker > 0 ) ? attacker : -1 ); 
+            AcceptEntityInput( pointHurt, "Hurt", (attacker>0)?attacker:-1 ); 
             DispatchKeyValue( pointHurt, "classname", "point_hurt" ); 
             DispatchKeyValue( victim, "targetname", "war3_donthurtme" ); 
             RemoveEdict( pointHurt ); 
@@ -740,7 +740,7 @@ stock SpawnBombz( client, m_iEnt, bool:m_bCritical = false, m_iCount = 0, Float:
         decl Float:m_flAngle[3]; 
         m_flAngle[0] = GetRandomFloat( -360.0 - ( m_iCount * 2 ), 360.0 + ( m_iCount * 2 ) );       //Left, Right
         m_flAngle[1] = GetRandomFloat( -360.0 - ( m_iCount * 2 ), 360.0 + ( m_iCount * 2 ) );       //Forward, Back
-        m_flAngle[2] = GetRandomFloat( 180.0 + ( m_iCount * 2 ), 720.0 + ( m_iCount * 2 ) );        //Up, Down
+        m_flAngle[2] = GetRandomFloat( -360.0 + ( m_iCount * 2 ), 360.0 + ( m_iCount * 2 ) );        //Up, Down
         
         EmitAmbientSound( SOUND_GRENADE, pos, m_iEnt, _, _, 0.5, 150 ); 
         
