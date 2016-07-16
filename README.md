@@ -1,16 +1,15 @@
 # customweaponstf
 Repo of Orion's custom attributes.
 
-Spreadsheet : 155 / 15x attributes done [?%]
+Spreadsheet : 159 / 159 attributes done [100.00%]
 
 Orion.smx done [100.00%]
 
 Moreaw2.smx done [100.00%]
 
-Dota2.smx done [?%]
-- "warcry", working, doesn't care about valve's weapons = fuuuuu.
+Dota2.smx done [100.00%]
 
-Changes in attributes :
+Changes in attributes (most recent):
 - Moreaw2.smx :
 - - "dmg is explosive" and its crit counterpart : Now has a milk option which milk every enemies in the explosion radius for X seconds.
 - Orion.smx :
