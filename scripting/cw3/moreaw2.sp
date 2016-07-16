@@ -128,6 +128,8 @@ new Float:m_flExplosiveCriticalDamage_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveCriticalDamage_Force[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveCriticalDamage_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iExplosiveCriticalDamage_DamageMode[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flExplosiveCriticalDamage_Milk[MAXPLAYERS + 1][MAXSLOTS + 1];
+
 
 
     /* On Attack
@@ -174,6 +176,7 @@ new Float:m_flExplosiveDamage_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveDamage_Force[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flExplosiveDamage_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iExplosiveDamage_DamageMode[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flExplosiveDamage_Milk[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bLevelUpSystem_DamageDone_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flLevelUpSystem_DamageDone_BonusDamage[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -1239,13 +1242,14 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "dmg is explosive" ) )
     {
-        new String:m_sValues[4][10];
+        new String:m_sValues[5][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flExplosiveDamage_Force[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
         m_flExplosiveDamage_Radius[m_iClient][m_iSlot]       = StringToFloat( m_sValues[1] );
         m_flExplosiveDamage_Damage[m_iClient][m_iSlot]       = StringToFloat( m_sValues[2] );
         m_iExplosiveDamage_DamageMode[m_iClient][m_iSlot]    = StringToInt( m_sValues[3] );
+        m_flExplosiveDamage_Milk[m_iClient][m_iSlot]         = StringToFloat( m_sValues[4] );
         m_bExplosiveDamage_ATTRIBUTE[m_iClient][m_iSlot]     = true;
         m_aAction = Plugin_Handled;
     }
@@ -1254,13 +1258,14 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
      * ---------------------------------------------------------------------- */
     else if ( StrEqual( m_sAttribute, "crit dmg is explosive" ) )
     {
-        new String:m_sValues[4][10];
+        new String:m_sValues[5][10];
         ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
         m_flExplosiveCriticalDamage_Force[m_iClient][m_iSlot]        = StringToFloat( m_sValues[0] );
         m_flExplosiveCriticalDamage_Radius[m_iClient][m_iSlot]       = StringToFloat( m_sValues[1] );
         m_flExplosiveCriticalDamage_Damage[m_iClient][m_iSlot]       = StringToFloat( m_sValues[2] );
-        m_iExplosiveCriticalDamage_DamageMode[m_iClient][m_iSlot]   = StringToInt( m_sValues[3] );
+        m_iExplosiveCriticalDamage_DamageMode[m_iClient][m_iSlot]    = StringToInt( m_sValues[3] );
+        m_flExplosiveCriticalDamage_Milk[m_iClient][m_iSlot]         = StringToFloat( m_sValues[4] );
         m_bExplosiveCriticalDamage_ATTRIBUTE[m_iClient][m_iSlot]     = true;
         m_aAction = Plugin_Handled;
     }
@@ -1720,12 +1725,14 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flExplosiveDamage_Force[m_iClient][m_iSlot]                                = 0.0;
             m_flExplosiveDamage_Radius[m_iClient][m_iSlot]                               = 0.0;
             m_iExplosiveDamage_DamageMode[m_iClient][m_iSlot]                            = 0;
+            m_flExplosiveDamage_Milk[m_iClient][m_iSlot]                                 = 0.0;
 
             m_bExplosiveCriticalDamage_ATTRIBUTE[m_iClient][m_iSlot]                     = false;
             m_flExplosiveCriticalDamage_Damage[m_iClient][m_iSlot]                       = 0.0;
             m_flExplosiveCriticalDamage_Force[m_iClient][m_iSlot]                        = 0.0;
             m_flExplosiveCriticalDamage_Radius[m_iClient][m_iSlot]                       = 0.0;
             m_iExplosiveCriticalDamage_DamageMode[m_iClient][m_iSlot]                    = 0;
+            m_flExplosiveCriticalDamage_Milk[m_iClient][m_iSlot]                         = 0.0;
 
             m_bLevelUpSystem_DamageDone_ATTRIBUTE[m_iClient][m_iSlot]                    = false;
             m_flLevelUpSystem_DamageDone_BonusDamage[m_iClient][m_iSlot]                 = 0.0;
@@ -1970,6 +1977,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                                                         dmg_reduction = ( m_flDamage * ( m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
 
                                                     DealDamage( i, RoundToFloor( ( ( m_iExplosiveDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, ( m_iType & TF_DMG_CRIT ? TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType : TF_DMG_ALWAYSGIB|TF_DMG_BLAST|m_iType ), "pumpkindeath" );
+                                                    if ( m_flExplosiveDamage_Milk[m_iAttacker][m_iSlot] > 0.0 ) TF2_AddCondition( i, TFCond_Milked, m_flExplosiveDamage_Milk[m_iAttacker][m_iSlot] );
                                                 }
                                             }
 
@@ -2423,6 +2431,7 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
                                                             dmg_reduction = ( m_flDamage * ( m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] - ( ( distance - 73.0 ) * 0.66 ) ) / m_flExplosiveCriticalDamage_Radius[m_iAttacker][m_iSlot] ) / m_flDamage;
                                 
                                                         DealDamage( i, RoundToFloor( ( ( m_iExplosiveCriticalDamage_DamageMode[m_iAttacker][m_iSlot] == 1 ? m_flDamage : 1.0 ) * m_flExplosiveCriticalDamage_Damage[m_iAttacker][m_iSlot] ) * dmg_reduction ), m_iAttacker, TF_DMG_ALWAYSGIB|TF_DMG_BLAST|TF_DMG_CRIT|m_iType, "pumpkindeath" );
+                                                        if ( m_flExplosiveCriticalDamage_Milk[m_iAttacker][m_iSlot] > 0.0 ) TF2_AddCondition( i, TFCond_Milked, m_flExplosiveCriticalDamage_Milk[m_iAttacker][m_iSlot] );
                                                     }
                                                 }
 
