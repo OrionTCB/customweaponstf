@@ -1098,31 +1098,31 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 
 HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    new String:m_strHUDElectroshock[24];
-    new String:m_strHUDJumpBonus[16];
-    new String:m_strHUDLevelUpSystem_DamageDone[24];
-    new String:m_strHUDLevelUpSystem_DamageReceived[24];
-    new String:m_strHUDMeetThePyro[16];
-    new String:m_strHUDMeetTheSniper[16];
-    new String:m_strHUDRespawnWhereYouDied[16];
+    new String:m_strHUDElectroshock[25];
+    new String:m_strHUDJumpBonus[17];
+    new String:m_strHUDLevelUpSystem_DamageDone[25];
+    new String:m_strHUDLevelUpSystem_DamageReceived[25];
+    new String:m_strHUDMeetThePyro[17];
+    new String:m_strHUDMeetTheSniper[17];
+    new String:m_strHUDRespawnWhereYouDied[17];
 
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageReceived_ATTRIBUTE ) ) {
         new m_iLevel = RoundToFloor( m_flFloats[m_iClient][m_flTakeDamageCharge]/100.0 );
         if ( m_iLevel > 4 ) m_iLevel = 4;
-        Format( m_strHUDLevelUpSystem_DamageReceived, sizeof( m_strHUDLevelUpSystem_DamageReceived ), "Upgrade %.0f%% [%i]", m_flFloats[m_iClient][m_flTakeDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 500 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
+        Format( m_strHUDLevelUpSystem_DamageReceived, sizeof( m_strHUDLevelUpSystem_DamageReceived ), "Upgrade: %.0f%% [%i]", m_flFloats[m_iClient][m_flTakeDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flTakeDamageCharge] >= 500 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flTakeDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bLevelUpSystem_DamageDone_ATTRIBUTE ) ) {
         new m_iLevel = RoundToFloor( m_flFloats[m_iClient][m_flDamageCharge]/100.0 );
         if ( m_iLevel > 3 ) m_iLevel = 3;
-        Format( m_strHUDLevelUpSystem_DamageDone, sizeof( m_strHUDLevelUpSystem_DamageDone ), "Upgrade %.0f%% [%i]", m_flFloats[m_iClient][m_flDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flDamageCharge] >= 400 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
+        Format( m_strHUDLevelUpSystem_DamageDone, sizeof( m_strHUDLevelUpSystem_DamageDone ), "Upgrade: %.0f%% [%i]", m_flFloats[m_iClient][m_flDamageCharge] - ( m_iLevel*100 ), ( m_flFloats[m_iClient][m_flDamageCharge] >= 400 ? 1 : 0 )+m_iLevel-( m_flFloats[m_iClient][m_flDamageCharge] < 100 ? 1 : 0 )+( m_iLevel <= 0 ? 1 : 0 ) );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bRespawnWhereYouDied_ATTRIBUTE ) )
-        Format( m_strHUDRespawnWhereYouDied, sizeof( m_strHUDRespawnWhereYouDied ), "Respawn %.0f%%", m_flFloats[m_iClient][m_flRespawn] );
+        Format( m_strHUDRespawnWhereYouDied, sizeof( m_strHUDRespawnWhereYouDied ), "Respawn: %.0f%%", m_flFloats[m_iClient][m_flRespawn] );
 //-//
     if ( HasAttribute( m_iClient, _, m_bElectroshock_ATTRIBUTE ) )
-        Format( m_strHUDElectroshock, sizeof( m_strHUDElectroshock ), "Electroshock %.0f%%", m_flFloats[m_iClient][m_flElectroshock] );
+        Format( m_strHUDElectroshock, sizeof( m_strHUDElectroshock ), "Electroshock: %.0f%%", m_flFloats[m_iClient][m_flElectroshock] );
 //-//
     if ( HasAttribute( m_iClient, _, m_bJumpBonus_ATTRIBUTE ) )
     {
@@ -1136,17 +1136,17 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
         /* ** ! ** */
         new MaxJumps = GetAttributeValueI( m_iClient, _, m_bJumpBonus_ATTRIBUTE, m_iJumpBonus_MaxJumps );
         if ( MaxJumps >= 1024 ) {
-            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i", Diff/*Jumps*/ );
+            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps: %i", Diff/*Jumps*/ );
         } else {
-            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps %i/%i", Diff/*Jumps*/, MaxJumps-BaseJumps2 );
+            Format( m_strHUDJumpBonus, sizeof( m_strHUDJumpBonus ), "Jumps: %i/%i", Diff/*Jumps*/, MaxJumps-BaseJumps2 );
         }
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bSniperCombo_ATTRIBUTE, true ) )
-        Format( m_strHUDMeetTheSniper, sizeof( m_strHUDMeetTheSniper ), "Combo %i/3", m_iIntegers[m_iClient][m_iSniperComboHit] );
+        Format( m_strHUDMeetTheSniper, sizeof( m_strHUDMeetTheSniper ), "Combo: %i/3", m_iIntegers[m_iClient][m_iSniperComboHit] );
 //-//
     if ( HasAttribute( m_iClient, _, m_bPyroCombo_ATTRIBUTE, true ) )
-        Format( m_strHUDMeetThePyro, sizeof( m_strHUDMeetThePyro ), "Combo %i/3", m_iIntegers[m_iClient][m_iPyroComboHit] );
+        Format( m_strHUDMeetThePyro, sizeof( m_strHUDMeetThePyro ), "Combo: %i/3", m_iIntegers[m_iClient][m_iPyroComboHit] );
 //-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks CHData :D
     {
