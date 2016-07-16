@@ -43,13 +43,13 @@ enum
 	Handle:m_hHeatFireRate_TimerDelay,
 	Handle:m_hHeatDamage_TimerDelay,
 	Handle:m_hDamageChargeThing_Enabled,
-	/*Handle:m_hFREEZE_TimeDuration,*/
 	Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
 enum
 {
 	m_bBackstab_SuicideBlocker = 0,
+	m_bStealPct,
 	m_bBuff_Deployed,
 	m_bInfiniteAfterburn_Ressuply,
 	m_bDamageChargeThing_Enable,
@@ -71,7 +71,6 @@ new Float:m_flFloats[MAXPLAYERS + 1][m_flFloat];
 enum
 {
 	m_iCombo = 0,
-	/*m_iFreezeStack,*/
 	m_iHeat,
 	m_iHeatToo,
 	m_iHotSauceType,
@@ -131,19 +130,6 @@ new m_iMarkVictimDamage_MaximumVictim[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bInfiniteAfterburn_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flInfiniteAfterburn_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new m_iInfiniteAfterburn_Ressuply[MAXPLAYERS + 1][MAXSLOTS + 1];
-
-// - Share damage ( victim | attacker ).
-// - The attacker deals 50% more damage BUT takes 33% more damage.
-// - WHILE the victim deals -50% damage BUT takes -33% damage.
-// - If the attacker dies from anything but himself(suicide), the victim will also die.
-//new bool:m_bDeathPact_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-//new Float:m_flDeathPact_Share[MAXPLAYERS + 1][MAXSLOTS + 1];
-/*
-new bool:m_bFreezeHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new m_iFreezeHit_StackNeeded[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flFreezeHit_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flFreezeHit_BonusFire[MAXPLAYERS + 1][MAXSLOTS + 1];
-*/
 
 
 	/* On Crit
@@ -321,6 +307,7 @@ new Float:m_flLaserWeaponDamageModifier_Damage[MAXPLAYERS + 1][MAXSLOTS + 1];
 new bool:m_bStealDamage_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flStealDamage_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flStealDamage_Steal[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iStealDamage_Pct[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 new bool:m_bDamageChargeThing_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flDamageChargeThing_Charge[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -1284,8 +1271,13 @@ HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 		Format( m_strHUDDamageResHpMissing, sizeof( m_strHUDDamageResHpMissing ), "Resistance: %.0f%%", m_flResPct*100.0 );
 	}
 //-//
-	if ( m_flFloats[m_iClient][m_flStealDamageVictim] > 1 || m_flFloats[m_iClient][m_flStealDamageAttacker] > 1 )
-		Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen: %i", m_flFloats[m_iClient][m_flStealDamageAttacker] - m_flFloats[m_iClient][m_flStealDamageVictim] );
+	if ( m_bBools[m_iClient][m_bStealPct] == true ) {
+		if ( m_flFloats[m_iClient][m_flStealDamageVictim] != 0.0 || m_flFloats[m_iClient][m_flStealDamageAttacker] != 0.0 )
+			Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen: %.0f%%", m_flFloats[m_iClient][m_flStealDamageAttacker] - m_flFloats[m_iClient][m_flStealDamageVictim] );
+	} else {
+		if ( m_flFloats[m_iClient][m_flStealDamageVictim] != 0.0 || m_flFloats[m_iClient][m_flStealDamageAttacker] != 0.0 )
+			Format( m_strHUDSteal, sizeof( m_strHUDSteal ), "Damage Stolen: %i", m_flFloats[m_iClient][m_flStealDamageAttacker] - m_flFloats[m_iClient][m_flStealDamageVictim] );
+	}
 //-//
 	if ( HasAttribute( m_iClient, _, m_bDamageChargeThing_ATTRIBUTE ) )
 	{
@@ -2172,11 +2164,12 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
 	 * ---------------------------------------------------------------------- */
 	else if ( StrEqual( m_sAttribute, "steal dmg" ) )
 	{
-		new String:m_sValues[2][10];
+		new String:m_sValues[3][10];
 		ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
 
 		m_flStealDamage_Steal[m_iClient][m_iSlot]    = StringToFloat( m_sValues[0] );
 		m_flStealDamage_Duration[m_iClient][m_iSlot] = StringToFloat( m_sValues[1] );
+		m_iStealDamage_Pct[m_iClient][m_iSlot] 		 = StringToInt( m_sValues[2] );
 		m_bStealDamage_ATTRIBUTE[m_iClient][m_iSlot] = true;
 		m_aAction = Plugin_Handled;
 	}
@@ -2542,6 +2535,7 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
 			m_bStealDamage_ATTRIBUTE[m_iClient][m_iSlot]                                 = false;
 			m_flStealDamage_Steal[m_iClient][m_iSlot]                                    = 0.0;
 			m_flStealDamage_Duration[m_iClient][m_iSlot]                                 = 0.0;
+			m_iStealDamage_Pct[m_iClient][m_iSlot]                                		 = 0;
 
 			m_bDamageChargeThing_ATTRIBUTE[m_iClient][m_iSlot]                           = false;
 			m_flDamageChargeThing_Charge[m_iClient][m_iSlot]                             = 0.0;
@@ -2885,10 +2879,13 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 							}
 						//-//
 							if ( m_bStealDamage_ATTRIBUTE[m_iAttacker][m_iSlot] ) {
-								if ( m_flFloats[m_iAttacker][m_flStealDamageAttacker] < 1.0 )
-									m_flDamage *= ( 1 + m_flFloats[m_iAttacker][m_flStealDamageAttacker] );
-								else
-									m_flDamage += m_flFloats[m_iAttacker][m_flStealDamageAttacker];
+								if ( m_flFloats[m_iAttacker][m_flStealDamageAttacker] )
+								{
+									if ( m_bBools[m_iAttacker][m_bStealPct] == true )
+										m_flDamage *= ( 1 + m_flFloats[m_iAttacker][m_flStealDamageAttacker] );
+									else
+										m_flDamage += m_flFloats[m_iAttacker][m_flStealDamageAttacker];
+								}
 							}
 						//-//
 							if ( m_bDamageChargeThing_ATTRIBUTE[m_iAttacker][m_iSlot] )
@@ -3032,7 +3029,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
 						}
 						if ( m_flFloats[m_iAttacker][m_flStealDamageVictim] != 0.0 )
 						{
-							if ( m_flFloats[m_iAttacker][m_flStealDamageVictim] < 1.0 )
+							if ( m_bBools[m_iAttacker][m_bStealPct] == true )
 								m_flDamage /= ( 1 + m_flFloats[m_iAttacker][m_flStealDamageVictim] );
 							else
 								m_flDamage -= m_flFloats[m_iAttacker][m_flStealDamageVictim];
@@ -3457,12 +3454,16 @@ public Action:OnTakeDamageAlive( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:
 							if ( m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] == INVALID_HANDLE )
 							{
 								m_flFloats[m_iAttacker][m_flStealDamageAttacker] += m_flStealDamage_Steal[m_iAttacker][m_iSlot];
+								if ( m_iStealDamage_Pct[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iAttacker][m_bStealPct] = true;
+								else m_bBools[m_iAttacker][m_bStealPct] = false;
 								m_hTimers[m_iAttacker][m_hStealDamageA_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageAttacker, m_iAttacker );
 							}
 							if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] );
 							if ( m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] == INVALID_HANDLE )
 							{
 								m_flFloats[m_iVictim][m_flStealDamageVictim] += m_flStealDamage_Steal[m_iAttacker][m_iSlot];
+								if ( m_iStealDamage_Pct[m_iAttacker][m_iSlot] == 1 ) m_bBools[m_iVictim][m_bStealPct] = true;
+								else m_bBools[m_iVictim][m_bStealPct] = false;
 								m_hTimers[m_iVictim][m_hStealDamageV_TimerDuration] = CreateTimer( m_flStealDamage_Duration[m_iAttacker][m_iSlot], m_tStealDamageVictim, m_iVictim );
 							}
 						}
