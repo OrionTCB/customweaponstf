@@ -46,9 +46,6 @@ enum
     Handle:m_hOverPower_TimerDuration,
     Handle:m_hRadiance_MissLinger,
     Handle:m_hRadiance_TimerInterval,
-    Handle:m_hWarCry_TimerDuration,
-    Handle:m_hWarCry_TimerCasterDuration,
-    Handle:m_hWarCry_TimerCooldown,
     Handle:m_hLifestealAura_TimerLinger,
     Handle:m_hCritAura_TimerLinger,
     Handle:m_hDamageAura_TimerLinger,
@@ -72,8 +69,6 @@ enum
     m_flAURA_Crit_Damage,
     m_flAURA_Damage_Damage,
     m_flAURA_Radiance_Chance,
-    m_flWarCry_SpeedMod,
-    m_flWarCry_DamageMod,
     m_flAW2Evasion_Chance,
     m_flDuel_Bonus,
     m_flFloat
@@ -273,13 +268,6 @@ new Float:m_flInnerVitality_HealthHealAbove[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flInnerVitality_HealthHealBelow[MAXPLAYERS + 1][MAXSLOTS + 1];
 new Float:m_flInnerVitality_HealthThreshold[MAXPLAYERS + 1][MAXSLOTS + 1];
 
-new bool:m_bWarCry_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flWarCry_DamageRes[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flWarCry_MoveSpeed[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flWarCry_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flWarCry_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
-new Float:m_flWarCry_Cooldown[MAXPLAYERS + 1][MAXSLOTS + 1];
-
 
     /* On Death
      * ---------------------------------------------------------------------- */
@@ -448,11 +436,6 @@ public Event_PostInventoryApplication( Handle:m_hEvent, const String:m_strName[]
             PrintHintText( m_iClient, "Custom: Duel is ready." );
             EmitSoundToClient( m_iClient, SOUND_READY );
         }
-        if ( m_hTimers[m_iClient][m_hWarCry_TimerCooldown] != INVALID_HANDLE ) {
-            ClearTimer( m_hTimers[m_iClient][m_hWarCry_TimerCooldown] );
-            PrintHintText( m_iClient, "Custom: War Cry is ready." );
-            EmitSoundToClient( m_iClient, SOUND_READY );
-        }
 
         if ( !g_hPostInventory[m_iClient] ) {
             CreateTimer( 0.02, m_tPostInventory, m_iClient );
@@ -489,7 +472,6 @@ public OnPreThink( m_iClient )
         m_iButtons = ATTRIBUTE_ENRAGE( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_INNERVITALITY( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
         m_iButtons = ATTRIBUTE_OVERPOWER( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
-        m_iButtons = ATTRIBUTE_WARCRY( m_iClient, m_iButtons, m_iSlot2, m_iButtonsLast );
     }
     CloseHandle( hArray );
     
@@ -611,60 +593,6 @@ ATTRIBUTE_ENRAGE( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
             }
         }
     }
-
-    return m_iButtons;
-}
-
-ATTRIBUTE_WARCRY( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
-{
-    if ( HasAttribute( m_iClient, _, m_bWarCry_ATTRIBUTE ) )
-    {
-        if ( HasAttribute( m_iClient, _, m_bWarCry_ATTRIBUTE, true ) )
-        {
-            if ( m_iButtons & IN_RELOAD == IN_RELOAD )
-            {
-                if ( m_hTimers[m_iClient][m_hWarCry_TimerCooldown] == INVALID_HANDLE )
-                {
-                    m_hTimers[m_iClient][m_hWarCry_TimerCooldown] = CreateTimer( GetAttributeValueF( m_iClient, _, m_bWarCry_ATTRIBUTE, m_flWarCry_Cooldown, true ), m_tWarCry_Cooldown, m_iClient );
-                    
-                    new Float:duration = GetAttributeValueF( m_iClient, _, m_bWarCry_ATTRIBUTE, m_flWarCry_Duration, true );
-
-                    if ( m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] );
-                    if ( m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] == INVALID_HANDLE ) m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] = CreateTimer( duration, m_tWarCry_Duration, m_iClient );
-
-                    new Float:m_flPos1[3];
-                    GetClientAbsOrigin( m_iClient, m_flPos1 );
-
-                    for ( new i = 1; i <= MaxClients; i++ )
-                    {
-                        if ( IsValidClient( i ) && IsPlayerAlive( i ) && GetClientTeam( i ) == GetClientTeam( m_iClient ) )
-                        {
-                            new Float:m_flPos2[3];
-                            GetClientEyePosition( i, m_flPos2 );
-
-                            new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                            if ( distance <= GetAttributeValueF( m_iClient, _, m_bWarCry_ATTRIBUTE, m_flWarCry_Radius, true ) )
-                            {
-                                if ( m_iClient != i )
-                                {
-                                    if ( m_hTimers[i][m_hWarCry_TimerDuration] != INVALID_HANDLE ) ClearTimer( m_hTimers[i][m_hWarCry_TimerDuration] );
-                                    if ( m_hTimers[i][m_hWarCry_TimerDuration] == INVALID_HANDLE ) m_hTimers[i][m_hWarCry_TimerDuration] = CreateTimer( duration, m_tWarCry_Duration, i );
-                                }
-                                m_flFloats[i][m_flWarCry_SpeedMod] = GetAttributeValueF( m_iClient, _, m_bWarCry_ATTRIBUTE, m_flWarCry_MoveSpeed, true );
-                                m_flFloats[i][m_flWarCry_DamageMod] = GetAttributeValueF( m_iClient, _, m_bWarCry_ATTRIBUTE, m_flWarCry_DamageRes, true );
-                                EmitSoundToClient( i, SOUND_RADIANCE );
-                                
-                                TF2_AddCondition( i, TFCond_TeleportedGlow, duration );                                                     // Fancy effects.
-                                TF2_AddCondition( i, TFCond_Teleporting, duration );                                                        // Fancy effects.
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if ( m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] != INVALID_HANDLE || m_hTimers[m_iClient][m_hWarCry_TimerDuration] != INVALID_HANDLE )
-        SetClientMovementSpeed( m_iClient, ( GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) ) * m_flFloats[m_iClient][m_flWarCry_SpeedMod] );
 
     return m_iButtons;
 }
@@ -1393,22 +1321,6 @@ public Action:CW3_OnAddAttribute( m_iSlot, m_iClient, const String:m_sAttribute[
         m_bBurningSpear_ATTRIBUTE[m_iClient][m_iSlot]   = true;
         m_aAction = Plugin_Handled;
     }
-    /* Warcry
-     *
-     * ---------------------------------------------------------------------- */
-    else if ( StrEqual( m_sAttribute, "warcry" ) )
-    {
-        new String:m_sValues[5][10];
-        ExplodeString( m_sValue, " ", m_sValues, sizeof( m_sValues ), sizeof( m_sValues[] ) );
-
-        m_flWarCry_DamageRes[m_iClient][m_iSlot]    = StringToFloat( m_sValues[0] );
-        m_flWarCry_MoveSpeed[m_iClient][m_iSlot]    = StringToFloat( m_sValues[1] );
-        m_flWarCry_Radius[m_iClient][m_iSlot]       = StringToFloat( m_sValues[2] );
-        m_flWarCry_Duration[m_iClient][m_iSlot]     = StringToFloat( m_sValues[3] );
-        m_flWarCry_Cooldown[m_iClient][m_iSlot]     = StringToFloat( m_sValues[4] );
-        m_bWarCry_ATTRIBUTE[m_iClient][m_iSlot]     = true;
-        m_aAction = Plugin_Handled;
-    }
     /* AURA: Lifesteal
      *
      * ---------------------------------------------------------------------- */
@@ -1649,13 +1561,6 @@ public CW3_OnWeaponRemoved( m_iSlot, m_iClient )
             m_flInnerVitality_HealthHealAbove[m_iClient][m_iSlot]    = 0.0;
             m_flInnerVitality_HealthHealBelow[m_iClient][m_iSlot]    = 0.0;
             m_flInnerVitality_HealthThreshold[m_iClient][m_iSlot]    = 0.0;
-
-            m_bWarCry_ATTRIBUTE[m_iClient][m_iSlot]                  = false;
-            m_flWarCry_DamageRes[m_iClient][m_iSlot]                 = 0.0;
-            m_flWarCry_MoveSpeed[m_iClient][m_iSlot]                 = 0.0;
-            m_flWarCry_Radius[m_iClient][m_iSlot]                    = 0.0;
-            m_flWarCry_Duration[m_iClient][m_iSlot]                  = 0.0;
-            m_flWarCry_Cooldown[m_iClient][m_iSlot]                  = 0.0;
 
 
             /* On Death
@@ -1935,11 +1840,10 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                 {
                     if ( !( m_iType & TF_DMG_CRIT == TF_DMG_CRIT ) ) {
                         if ( m_flFloats[m_iAttacker][m_flAURA_Crit_Chance] >= GetRandomFloat( 0.0, 1.0 ) )
-                        {
-                            m_flDamage *= m_flFloats[m_iAttacker][m_flAURA_Crit_Damage];
-                            m_iType = TF_DMG_CRIT;
-                        }
+                            m_iType = m_iType|TF_DMG_CRIT;
                     }
+                    if ( m_iType & TF_DMG_CRIT == TF_DMG_CRIT )
+                        m_flDamage *= m_flFloats[m_iAttacker][m_flAURA_Crit_Damage];
                 }
             //-//
                 if ( m_hTimers[m_iAttacker][m_hDamageAura_TimerLinger] != INVALID_HANDLE )
@@ -1961,13 +1865,6 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
         /* Reduces/Increases damage with 'armor'.
          *
          * -------------------------------------------------- */
-        if ( m_hTimers[m_iVictim][m_hWarCry_TimerDuration] != INVALID_HANDLE || m_hTimers[m_iVictim][m_hWarCry_TimerCasterDuration] != INVALID_HANDLE ) 
-        {
-            if ( !( m_iType & DOTA_DMG_BLADEMAIL ) && !( m_iType & DOTA_DMG_DISPERSION ) && !( m_iType & DOTA_DMG_OTHER ) )
-            {
-                m_flDamage *= GetAttributeValueF( m_iVictim, _, m_bWarCry_ATTRIBUTE, m_flWarCry_DamageRes );
-            }
-        }
         if ( IsValidClient( m_iAttacker ) )
         {
             /* Desolator, increases player's damage.
@@ -2613,32 +2510,6 @@ public Action:m_tLastWill_TimerDelay( Handle:timer, any:m_hData05 )
     {
         DealDamage( m_iKiller, GetAttributeValueI( m_iVictim, _, m_bLastWill_ATTRIBUTE, m_iLastWill_Damage ), m_iVictim, TF_DMG_PREVENT_PHYSICS_FORCE|DOTA_DMG_BLADEMAIL );
     }
-}
-public Action:m_tWarCry_Cooldown( Handle:timer, any:m_iClient )
-{
-    if ( HasAttribute( m_iClient, _, m_bWarCry_ATTRIBUTE ) && IsPlayerAlive( m_iClient ) )
-    {
-        PrintHintText( m_iClient, "Custom: Warcry is ready." );
-        EmitSoundToClient( m_iClient, SOUND_READY );
-    }
-
-    m_hTimers[m_iClient][m_hWarCry_TimerCooldown] = INVALID_HANDLE;
-}
-public Action:m_tWarCry_Duration( Handle:timer, any:m_iClient )
-{
-    if ( HasAttribute( m_iClient, _, m_bWarCry_ATTRIBUTE ) )
-    {
-        if ( IsPlayerAlive( m_iClient ) ) {
-            PrintHintText( m_iClient, "Custom: Warcry done." );
-            EmitSoundToClient( m_iClient, SOUND_NOTREADY );
-        }
-    }
-    m_flFloats[m_iClient][m_flWarCry_SpeedMod] = 1.0;
-    m_flFloats[m_iClient][m_flWarCry_DamageMod] = 1.0;
-    SetClientMovementSpeed( m_iClient, GetClassBaseMovementSpeed( m_iClient ) * GetClientMovementSpeedAttributes( m_iClient ) );
-
-    m_hTimers[m_iClient][m_hWarCry_TimerDuration] = INVALID_HANDLE;
-    m_hTimers[m_iClient][m_hWarCry_TimerCasterDuration] = INVALID_HANDLE;
 }
 
 // Super timer.
