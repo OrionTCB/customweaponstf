@@ -2385,9 +2385,9 @@ public OnEntitySpawned( m_iEntity )
 // -
 public Action:m_tRadiance( Handle:timer, any:m_iClient )
 {
-    if ( HasAttribute( m_iClient, _, m_bRadiance_ATTRIBUTE ) )
+    if ( IsValidClient( m_iClient ) )
     {
-        if ( IsValidClient( m_iClient ) )
+        if ( HasAttribute( m_iClient, _, m_bRadiance_ATTRIBUTE ) )
         {
             new Float:m_flPos1[3];
             GetClientEyePosition( m_iClient, m_flPos1 );
