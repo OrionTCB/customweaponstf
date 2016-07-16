@@ -43,6 +43,7 @@ enum
 	Handle:m_hHeatFireRate_TimerDelay,
 	Handle:m_hHeatDamage_TimerDelay,
 	Handle:m_hDamageChargeThing_Enabled,
+	/*Handle:m_hFREEZE_TimeDuration,*/
 	Handle:m_hTimer
 };
 new Handle:m_hTimers[MAXPLAYERS + 1][m_hTimer];
@@ -70,6 +71,7 @@ new Float:m_flFloats[MAXPLAYERS + 1][m_flFloat];
 enum
 {
 	m_iCombo = 0,
+	/*m_iFreezeStack,*/
 	m_iHeat,
 	m_iHeatToo,
 	m_iHotSauceType,
@@ -136,6 +138,12 @@ new m_iInfiniteAfterburn_Ressuply[MAXPLAYERS + 1][MAXSLOTS + 1];
 // - If the attacker dies from anything but himself(suicide), the victim will also die.
 //new bool:m_bDeathPact_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
 //new Float:m_flDeathPact_Share[MAXPLAYERS + 1][MAXSLOTS + 1];
+/*
+new bool:m_bFreezeHit_ATTRIBUTE[MAXPLAYERS + 1][MAXSLOTS + 1];
+new m_iFreezeHit_StackNeeded[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flFreezeHit_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:m_flFreezeHit_BonusFire[MAXPLAYERS + 1][MAXSLOTS + 1];
+*/
 
 
 	/* On Crit
