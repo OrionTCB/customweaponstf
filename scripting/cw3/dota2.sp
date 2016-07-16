@@ -727,7 +727,7 @@ ATTRIBUTE_LIFESTEALAURA( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 if ( distance <= GetAttributeValueF( m_iClient, _, m_bLifestealAura_ATTRIBUTE, m_flLifestealAura_Radius ) )
                 {
                     // Create a timer that lingers 0.5 to repeatedly remove the miss debuff.
-                    if ( m_hTimers[i][m_hLifestealAura_TimerLinger] == INVALID_HANDLE ) CreateTimer( 0.5, m_tLifestealAura_Linger, i );
+                    if ( m_hTimers[i][m_hLifestealAura_TimerLinger] == INVALID_HANDLE ) m_hTimers[i][m_hLifestealAura_TimerLinger] = CreateTimer( 0.5, m_tLifestealAura_Linger, i );
 
                     m_flFloats[i][m_flAURA_Lifesteal_Lifesteal] = GetAttributeValueF( m_iClient, _, m_bLifestealAura_ATTRIBUTE, m_flLifestealAura_Lifesteal );
                     m_flFloats[i][m_flAURA_Lifesteal_Overheal] = GetAttributeValueF( m_iClient, _, m_bLifestealAura_ATTRIBUTE, m_flLifestealAura_Overheal );
@@ -757,7 +757,7 @@ ATTRIBUTE_CRITAURA( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                 if ( distance <= GetAttributeValueF( m_iClient, _, m_bCritAura_ATTRIBUTE, m_flCritAura_Radius ) )
                 {
                     // Create a timer that lingers 0.5 to repeatedly remove the miss debuff.
-                    if ( m_hTimers[i][m_hCritAura_TimerLinger] == INVALID_HANDLE ) CreateTimer( 0.5, m_tCritAura_Linger, i );
+                    if ( m_hTimers[i][m_hCritAura_TimerLinger] == INVALID_HANDLE ) m_hTimers[i][m_hCritAura_TimerLinger] = CreateTimer( 0.5, m_tCritAura_Linger, i );
 
                     m_flFloats[i][m_flAURA_Crit_Chance] = GetAttributeValueF( m_iClient, _, m_bCritAura_ATTRIBUTE, m_flCritAura_Chance );
                     m_flFloats[i][m_flAURA_Crit_Damage] = GetAttributeValueF( m_iClient, _, m_bCritAura_ATTRIBUTE, m_flCritAura_Damage );
@@ -792,7 +792,7 @@ ATTRIBUTE_DAMAGEAURA( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
                     if ( distance <= GetAttributeValueF( m_iClient, _, m_bDamageAura_ATTRIBUTE, m_flDamageAura_Radius ) )
                     {
                         // Create a timer that lingers 0.5 to repeatedly remove the miss debuff.
-                        if ( m_hTimers[i][m_hDamageAura_TimerLinger] == INVALID_HANDLE ) CreateTimer( 0.5, m_tDamageAura_Linger, i );
+                        if ( m_hTimers[i][m_hDamageAura_TimerLinger] == INVALID_HANDLE ) m_hTimers[i][m_hDamageAura_TimerLinger] = CreateTimer( 0.5, m_tDamageAura_Linger, i );
 
                         m_flFloats[i][m_flAURA_Damage_Damage] = GetAttributeValueF( m_iClient, _, m_bDamageAura_ATTRIBUTE, m_flDamageAura_Damage );
                     }
@@ -931,59 +931,61 @@ PRETHINK_STACKREMOVER( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 }
 HUD_SHOWSYNCHUDTEXT( m_iClient, &m_iButtons, &m_iSlot, &m_iButtonsLast )
 {
-    new String:m_strHUDNecromastery[16];
-    new String:m_strHUDFervor[16];
-    new String:m_strHUDEvasionOnHit[16];
-    new String:m_strHUDOverPower[20];
-    new String:m_strHUDDuel[16];
-    new String:m_strHUDBloodstone[16];
-    new String:m_strHUDAURA1[24];
-    new String:m_strHUDAURA2[28];
-    new String:m_strHUDAURA3[20];
+    new String:m_strHUDNecromastery[17];
+    new String:m_strHUDFervor[17];
+    new String:m_strHUDEvasionOnHit[24];
+    new String:m_strHUDOverPower[21];
+    new String:m_strHUDDuel[17];
+    new String:m_strHUDBloodstone[17];
+    new String:m_strHUDAURA1[25];
+    new String:m_strHUDAURA2[41];
+    new String:m_strHUDAURA3[28];
 
     if ( HasAttribute( m_iClient, _, m_bNecromastery_ATTRIBUTE, true ) )
     {
         if ( GetAttributeValueI( m_iClient, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_MaximumStack, true ) >= 1024 ) {
-            Format( m_strHUDNecromastery, sizeof( m_strHUDNecromastery ), "Kills %i", m_iIntegers[m_iClient][m_iNecromastery_Souls] );
+            Format( m_strHUDNecromastery, sizeof( m_strHUDNecromastery ), "Kills: %i", m_iIntegers[m_iClient][m_iNecromastery_Souls] );
         } else {
-            Format( m_strHUDNecromastery, sizeof( m_strHUDNecromastery ), "Kills %i/%i", m_iIntegers[m_iClient][m_iNecromastery_Souls], GetAttributeValueI( m_iClient, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_MaximumStack, true ) );
+            Format( m_strHUDNecromastery, sizeof( m_strHUDNecromastery ), "Kills: %i/%i", m_iIntegers[m_iClient][m_iNecromastery_Souls], GetAttributeValueI( m_iClient, _, m_bNecromastery_ATTRIBUTE, m_iNecromastery_MaximumStack, true ) );
         }
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bFervor_ATTRIBUTE, true ) )
-        Format( m_strHUDFervor, sizeof( m_strHUDFervor ), "Fervor %i/%i", m_iIntegers[m_iClient][m_iFervor_Stack], GetAttributeValueI( m_iClient, _, m_bFervor_ATTRIBUTE, m_iFervor_MaximumStack, true ) );
+        Format( m_strHUDFervor, sizeof( m_strHUDFervor ), "Fervor: %i/%i", m_iIntegers[m_iClient][m_iFervor_Stack], GetAttributeValueI( m_iClient, _, m_bFervor_ATTRIBUTE, m_iFervor_MaximumStack, true ) );
 //-//
     if ( HasAttribute( m_iClient, _, m_bOverPower_ATTRIBUTE, true ) && m_iIntegers[m_iClient][m_iOverpower_RemainingHit] >= 1 )
-        Format( m_strHUDOverPower, sizeof( m_strHUDOverPower ), "Remaining Hits %i", m_iIntegers[m_iClient][m_iOverpower_RemainingHit] );
+        Format( m_strHUDOverPower, sizeof( m_strHUDOverPower ), "Remaining Hits: %i", m_iIntegers[m_iClient][m_iOverpower_RemainingHit] );
 //-//
     if ( HasAttribute( m_iClient, _, m_bEvasionAW2_ATTRIBUTE ) && GetAttributeValueI( m_iClient, _, m_bEvasionAW2_ATTRIBUTE, m_iEvasionAW2_PoA ) == 0
         || HasAttribute( m_iClient, _, m_bEvasionAW2_ATTRIBUTE, true ) && GetAttributeValueI( m_iClient, _, m_bEvasionAW2_ATTRIBUTE, m_iEvasionAW2_PoA ) == 1 )
-        Format( m_strHUDEvasionOnHit, sizeof( m_strHUDEvasionOnHit ), "Evasion %.0f%%", m_flFloats[m_iClient][m_flAW2Evasion_Chance] * 100.0 );
+        Format( m_strHUDEvasionOnHit, sizeof( m_strHUDEvasionOnHit ), "Evasion: %.0f%% Chance", m_flFloats[m_iClient][m_flAW2Evasion_Chance] * 100.0 );
 //-//
-    if ( m_flFloats[m_iClient][m_flDuel_Bonus] >= 1.0 || HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) )
+    if ( m_flFloats[m_iClient][m_flDuel_Bonus] != 0.0 || HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) )
     {
         new String:m_sState[7];
         if ( HasAttribute( m_iClient, _, m_bDuel_ATTRIBUTE ) ) {
             ( m_bBools[m_iClient][m_bDuel_ReadyForIt] ? Format( m_sState, sizeof( m_sState ), " [ON]", m_sState ) : Format( m_sState, sizeof( m_sState ), " [OFF]", m_sState ) );
         }
-        Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel %.0f%s", m_flFloats[m_iClient][m_flDuel_Bonus], m_sState );
+        if ( m_flFloats[m_iClient][m_flDuel_Bonus] < 0.0 )
+            Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel: %.0f%%%s", FloatAbs( m_flFloats[m_iClient][m_flDuel_Bonus] ) * 100.0, m_sState );
+        else Format( m_strHUDDuel, sizeof( m_strHUDDuel ), "Duel: %.0f%s", m_flFloats[m_iClient][m_flDuel_Bonus], m_sState );
     }
 //-//
     if ( HasAttribute( m_iClient, _, m_bBloodstone_ATTRIBUTE ) )
-        Format( m_strHUDBloodstone, sizeof( m_strHUDBloodstone ), "Bloodpact %i", m_iIntegers[m_iClient][m_iBloodstone_Charge] );
+        Format( m_strHUDBloodstone, sizeof( m_strHUDBloodstone ), "Bloodpact: %i", m_iIntegers[m_iClient][m_iBloodstone_Charge] );
 //-//
     if ( m_hTimers[m_iClient][m_hLifestealAura_TimerLinger] != INVALID_HANDLE )
-        Format( m_strHUDAURA1, sizeof( m_strHUDAURA1 ), "Lifesteal Aura %.0f%%", m_flFloats[m_iClient][m_flAURA_Lifesteal_Lifesteal] * 100.0 );
+        Format( m_strHUDAURA1, sizeof( m_strHUDAURA1 ), "Lifesteal Aura: %.0f%%", m_flFloats[m_iClient][m_flAURA_Lifesteal_Lifesteal] * 100.0 );
 //-//
     if ( m_hTimers[m_iClient][m_hCritAura_TimerLinger] != INVALID_HANDLE )
-        Format( m_strHUDAURA2, sizeof( m_strHUDAURA2 ), "Crit Aura %.0f%% - %.0f%%", m_flFloats[m_iClient][m_flAURA_Crit_Chance] * 100.0, m_flFloats[m_iClient][m_flAURA_Crit_Damage] * 100.0 );
+        Format( m_strHUDAURA2, sizeof( m_strHUDAURA2 ), "Crit Aura: %.0f%% Chance - %.0f%% Damage", m_flFloats[m_iClient][m_flAURA_Crit_Chance] * 100.0, m_flFloats[m_iClient][m_flAURA_Crit_Damage] * 100.0 );
 //-//
     if ( m_hTimers[m_iClient][m_hDamageAura_TimerLinger] != INVALID_HANDLE )
-        Format( m_strHUDAURA3, sizeof( m_strHUDAURA3 ), "Damage Aura %.0f%%", m_flFloats[m_iClient][m_flAURA_Damage_Damage] * 100.0 );
+        Format( m_strHUDAURA3, sizeof( m_strHUDAURA3 ), "Damage Aura: %.0f%% Damage", m_flFloats[m_iClient][m_flAURA_Damage_Damage] * 100.0 );
 //-//
     if ( IfDoNextTime2( m_iClient, e_flNextHUDUpdate, 0.1 ) ) // Thanks Chdata :D
     {
-        ShowSyncHudText( m_iClient, g_hHudText_D2, "%s \n%s \n%s \n%s \n%s \n%s", m_strHUDEvasionOnHit,
+        ShowSyncHudText( m_iClient, g_hHudText_D2, "%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s", m_strHUDEvasionOnHit,
                                                                                   m_strHUDNecromastery,
                                                                                   m_strHUDFervor,
                                                                                   m_strHUDOverPower,
@@ -1915,10 +1917,18 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                 }
             //-//
                 // Reduces damage coming from flame pls.
-                if ( m_flFloats[m_iAttacker][m_flDuel_Bonus] >= 1.0 && !( m_iType & DOTA_DMG_BLADEMAIL ) && !( m_iType & DOTA_DMG_DISPERSION ) && !( m_iType & DOTA_DMG_OTHER ) )
+                if ( m_flFloats[m_iAttacker][m_flDuel_Bonus] != 0.0 && !( m_iType & DOTA_DMG_BLADEMAIL ) && !( m_iType & DOTA_DMG_DISPERSION ) && !( m_iType & DOTA_DMG_OTHER ) )
                 {
-                    if ( m_iType & TF_DMG_BURN == TF_DMG_BURN || m_iType & TF_DMG_FIRE == TF_DMG_FIRE ) m_flDamage += ( m_flFloats[m_iAttacker][m_flDuel_Bonus] / 10.0 );
-                    else m_flDamage += m_flFloats[m_iAttacker][m_flDuel_Bonus];
+                    if ( m_flFloats[m_iAttacker][m_flDuel_Bonus] > 0.0 )
+                    {
+                        if ( m_iType & TF_DMG_BURN == TF_DMG_BURN || m_iType & TF_DMG_FIRE == TF_DMG_FIRE ) m_flDamage += ( m_flFloats[m_iAttacker][m_flDuel_Bonus] / 10.0 );
+                        else m_flDamage += m_flFloats[m_iAttacker][m_flDuel_Bonus];
+                    }
+                    else if ( m_flFloats[m_iAttacker][m_flDuel_Bonus] < 0.0 ) // negative = %
+                    {
+                        if ( m_iType & TF_DMG_BURN == TF_DMG_BURN || m_iType & TF_DMG_FIRE == TF_DMG_FIRE ) m_flDamage *= ( 1 + ( FloatAbs( m_flFloats[m_iAttacker][m_flDuel_Bonus] ) / 10.0 ) );
+                        else m_flDamage *= ( 1 + FloatAbs( m_flFloats[m_iAttacker][m_flDuel_Bonus] ) );
+                    }
                 }
             //-//
                 if ( m_hTimers[m_iAttacker][m_hCritAura_TimerLinger] != INVALID_HANDLE )
@@ -1933,7 +1943,7 @@ public Action:OnTakeDamage( m_iVictim, &m_iAttacker, &m_iInflictor, &Float:m_flD
                 }
             //-//
                 if ( m_hTimers[m_iAttacker][m_hDamageAura_TimerLinger] != INVALID_HANDLE )
-                     m_flDamage *= m_flFloats[m_iAttacker][m_flAURA_Damage_Damage];
+                    m_flDamage *= m_flFloats[m_iAttacker][m_flAURA_Damage_Damage];
             }
         }
 
