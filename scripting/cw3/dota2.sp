@@ -2292,9 +2292,9 @@ public OnEntitySpawned( m_iEntity )
 // -
 public Action:m_tRadiance( Handle:timer, any:m_iClient )
 {
-    if ( IsValidClient( m_iClient ) )
+    if ( HasAttribute( m_iClient, _, m_bRadiance_ATTRIBUTE ) )
     {
-        if ( HasAttribute( m_iClient, _, m_bRadiance_ATTRIBUTE ) )
+        if ( IsValidClient( m_iClient ) )
         {
             new Float:m_flPos1[3];
             GetClientEyePosition( m_iClient, m_flPos1 );
@@ -2310,8 +2310,8 @@ public Action:m_tRadiance( Handle:timer, any:m_iClient )
                         GetClientEyePosition( i, m_flPos2 );
                         m_flPos2[2] -= 30.0;
                         
-                        new Float:distance = GetVectorDistance( m_flPos1, m_flPos2 );
-                        if ( distance <= GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
+                        new Float:m_flDistance = GetVectorDistance( m_flPos1, m_flPos2 );
+                        if ( m_flDistance < GetAttributeValueF( m_iClient, _, m_bRadiance_ATTRIBUTE, m_flRadiance_Radius ) )
                         {
                             decl Handle:m_hSee;
                             ( m_hSee = INVALID_HANDLE );
