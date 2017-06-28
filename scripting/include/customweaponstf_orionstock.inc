@@ -62,63 +62,66 @@ stock String:g_strSoundExplosionBox[][PLATFORM_MAX_PATH] = {
 #define TF_DMG_BULLET                       (1 << 1)                                                // 2            ► Bullet in general && Sniper Rifle ( Exception: The Classic ) && Scout's Homerun && Heavy's Showdown.
 #define TF_DMG_BLEED                        (1 << 2)                                                // 4            ► Bleed in general && Cleaver && Spy's Fencing final damage.
 #define TF_DMG_BURN                         (1 << 3)                                                // 8
-#define SDK_DMG_UNKNOWN                     (1 << 4)                                                // 16
+#define SDK_DMG_UNUSED                      (1 << 4)                                                // 16
 #define TF_DMG_FALL                         (1 << 5)                                                // 32           ► Fall in general && Mantreads's stomp.
 #define TF_DMG_BLAST                        (1 << 6)                                                // 64           ► Also Engineer's Organ Grinder final damage.
 #define TF_DMG_MISC                         (1 << 7)                                                // 128          ► Sandman's ball && Wrap Assassin's ball && Shield && Demoman's Decapitation Taunt Kill && Engineer's Dischord && Headless Horseless Horsemann.
-#define SDK_DMG_SHOCK                       (1 << 8)                                                // 256
-#define TF_DMG_LASER                        (1 << 9)                                                // 512          ► Righteous Bison && Pomson 6000.
+#define SDK_DMG_UNUSED2                     (1 << 8)                                                // 256
+#define SDK_DMG_UNUSED3                     (1 << 9)                                                // 512
 #define DOTA_DMG_DISPERSION                 (1 << 10)                                               // 1024
-#define TF_DMG_PREVENT_PHYSICS_FORCE        (1 << 11)                                               // 2048
-#define TF_DMG_SOMETAUNTKILLS               TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_BULLET            // 2050         ► Engineer's Organ Grinder spinning phase && Medic's Spinal Tap initial AND final damage && Sniper's Skewer.
-#define TF_DMG_SPY_FENCING                  TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_BLEED             // 2052         ► Only the first 2 damages instances.
-#define TF_DMG_AFTERBURN                    TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_BURN              // 2056
-#define TF_DMG_BLAST_WRAPASSASSIN           TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_BLAST             // 2112
-#define TF_DMG_NEVERGIB                     (1 << 12)                                               // 4096
-#define TF_DMG_ALWAYSGIB                    (1 << 13)                                               // 8192
+#define TF_PREVENT_PHYSICS_FORCE            (1 << 11)                                               // 2048
+#define TF_DMG_SOMETAUNTKILLS               TF_PREVENT_PHYSICS_FORCE | TF_DMG_BULLET                // 2050         ► Engineer's Organ Grinder spinning phase && Medic's Spinal Tap initial AND final damage && Sniper's Skewer.
+#define TF_DMG_SPY_FENCING                  TF_PREVENT_PHYSICS_FORCE | TF_DMG_BLEED                 // 2052         ► Only the first 2 damages instances.
+#define TF_DMG_AFTERBURN                    TF_PREVENT_PHYSICS_FORCE | TF_DMG_BURN                  // 2056
+#define TF_DMG_BLAST_WRAPASSASSIN           TF_PREVENT_PHYSICS_FORCE | TF_DMG_BLAST                 // 2112
+#define TF_DMG_ZATOICHI_RETURN				TF_PREVENT_PHYSICS_FORCE | TF_DMG_MISC			     	// 2176
+#define TF_NEVERGIB                     	(1 << 12)                                               // 4096
+#define TF_ALWAYSGIB                    	(1 << 13)                                               // 8192
 #define TF_DMG_DROWN                        (1 << 14)                                               // 16384
 #define DOTA_DMG_OTHER                      (1 << 15)                                               // 32768
 #define TF_DMG_ENV                          (1 << 16)                                               // 65536
-#define SDK_DMG_UNKNOWN3                    (1 << 17)                                               // 131072
-#define SDK_DMG_UNKNOWN4                    (1 << 18)                                               // 262144
-#define TF_DMG_GRENADE                      SDK_DMG_UNKNOWN4 | TF_DMG_BLAST                         // 262208
+#define TF_PLUS1                    		(1 << 17)                                               // 131072
+#define TF_DMG_LASER						TF_PLUS1 | TF_DMG_BULLET								// 131074
+#define TF_PLUS2                   	 		(1 << 18)                                               // 262144
+#define TF_DMG_GRENADE                      TF_PLUS2 | TF_DMG_BLAST                         		// 262208
 #define TF_DMG_DROWNRECOVER                 (1 << 19)                                               // 524288
 #define TF_DMG_CRIT                         (1 << 20)                                               // 1048576      ► Also Mini-Crit.
 #define TF_DMG_GRENADE_CRIT                 TF_DMG_GRENADE | TF_DMG_CRIT                            // 1310784      ► Also Double Donk.
-#define SDK_DMG_UNKNOWN5                    (1 << 21)                                               // 2097152
-#define TF_DMG_BULLET2                      SDK_DMG_UNKNOWN5 | TF_DMG_BULLET                        // 2097154      ► Pistol && Minigun && Short Circuit && SMG.
-#define TF_DMG_SOLDIER_KAMIKAZE             SDK_DMG_UNKNOWN5 | TF_DMG_BLAST                         // 2097216      ► Also the Caber's explosion.
-#define TF_DMG_SYRINGE                      SDK_DMG_UNKNOWN5 | SDK_DMG_UNKNOWN3 | TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_BULLET    // 2230274
-#define TF_DMG_SENTRY                       SDK_DMG_UNKNOWN5 | SDK_DMG_UNKNOWN3 | TF_DMG_NEVERGIB | TF_DMG_BULLET                 // 2232322
-#define TF_DMG_ROCKET                       SDK_DMG_UNKNOWN5 | TF_DMG_GRENADE                       // 2359360      ► Also Sentry's Rocket.
-#define TF_DMG_STICKY                       SDK_DMG_UNKNOWN5 | SDK_DMG_UNKNOWN3 | TF_DMG_GRENADE    // 2490432
+#define TF_PLUS3                    		(1 << 21)                                               // 2097152
+#define TF_DMG_BULLET2                      TF_PLUS3 | TF_DMG_BULLET                        		// 2097154      ► Pistol && Minigun && Short Circuit && SMG.
+#define TF_DMG_SOLDIER_KAMIKAZE             TF_PLUS3 | TF_DMG_BLAST                         		// 2097216      ► Also the Caber's explosion.
+#define TF_DMG_BISON						TF_PLUS3 | TF_DMG_LASER									// 2228226		► Righteous Bison & Pomson.
+#define TF_DMG_SYRINGE                      TF_PLUS3 | TF_PLUS1 | TF_PREVENT_PHYSICS_FORCE | TF_DMG_BULLET    // 2230274
+#define TF_DMG_SENTRY                       TF_PLUS3 | TF_PLUS1 | TF_NEVERGIB | TF_DMG_BULLET       // 2232322
+#define TF_DMG_ROCKET                       TF_PLUS3 | TF_DMG_GRENADE                       		// 2359360      ► Also Sentry's Rocket.
+#define TF_DMG_STICKY                       TF_PLUS3 | TF_PLUS1 | TF_DMG_GRENADE    				// 2490432
 #define TF_DMG_BULLET2_CRIT                 TF_DMG_BULLET2 | TF_DMG_CRIT                            // 3145730      ► Pistol && Minigun && Short Circuit && SMG.
 #define TF_DMG_ROCKET_CRIT                  TF_DMG_ROCKET | TF_DMG_CRIT                             // 3407936
 #define TF_DMG_STICKY_CRIT                  TF_DMG_STICKY | TF_DMG_CRIT                             // 3539008
 #define TF_DMG_REMOVENORAGDOLL              (1 << 22)                                               // 4194304
-#define SDK_DMG_UNKNOWN6                    (1 << 23)                                               // 8388608
+#define SDK_DMG_UNUSED4                    	(1 << 23)                                              	// 8388608
 #define TF_DMG_FIRE                         (1 << 24)                                               // 16777216     ► Fire in general && Pyro's Armageddon && Huo-Long Heater's Ring of Fire.
 #define TF_DMG_FLARE                        TF_DMG_FIRE | TF_DMG_BULLET                             // 16777218
 #define TF_DMG_PYRO_HADOUKEN                TF_DMG_FIRE | TF_DMG_BURN                               // 16777224
-#define TF_DMG_FLAMETHROWER                 TF_DMG_PREVENT_PHYSICS_FORCE | TF_DMG_FIRE              // 16779264
+#define TF_DMG_FLAMETHROWER                 TF_PREVENT_PHYSICS_FORCE | TF_DMG_FIRE             		// 16779264
 #define TF_DMG_SCORCHSHOT                   TF_DMG_FLAMETHROWER | TF_DMG_BULLET                     // 16779266     ► Scorch Shot && Pyro's Execution.
 #define TF_DMG_FLARE_CRIT                   TF_DMG_FLARE | TF_DMG_CRIT                              // 17825794
 #define TF_DMG_FLAMETHROWER_CRIT            TF_DMG_FLAMETHROWER | TF_DMG_CRIT                       // 17827840
-#define TF_DMG_BLAST_FLARE                  TF_DMG_FLARE | SDK_DMG_UNKNOWN4                         // 17039362     ► Scorch Shot && Detonator explosion.
-#define TF_DMG_BLAST_FLARE_CRIT             TF_DMG_FLARE_CRIT | SDK_DMG_UNKNOWN4                    // 18087938     ► Scorch Shot && Detonator explosion.
-#define TF_DMG_COWMANGLER_CHARGED           TF_DMG_FIRE | TF_DMG_ROCKET | TF_DMG_CRIT               // 20185152
-#define SDK_DMG_UNKNOWN7                    (1 << 25)                                               // 33554432
-#define TF_DMG_RIFLE_CHARGED                SDK_DMG_UNKNOWN7 | TF_DMG_BULLET                        // 33554434     ► Also Crusader's Crossbow && Huntsman && The Classic.
+#define TF_DMG_BLAST_FLARE                  TF_DMG_FLARE | TF_PLUS2                         		// 17039362     ► Scorch Shot && Detonator explosion.
+#define TF_DMG_BLAST_FLARE_CRIT             TF_DMG_FLARE_CRIT | TF_PLUS2                    		// 18087938     ► Scorch Shot && Detonator explosion.
+#define TF_DMG_COWMANGLER_CHARGED			TF_DMG_FIRE | TF_DMG_ROCKET								// 19136576
+#define TF_PLUS4                    		(1 << 25)                                               // 33554432
+#define TF_DMG_RIFLE_CHARGED                TF_PLUS4 | TF_DMG_BULLET                        		// 33554434     ► Also Crusader's Crossbow && Huntsman && The Classic.
 #define TF_DMG_RIFLE_CRIT                   TF_DMG_RIFLE_CHARGED | TF_DMG_CRIT                      // 34603010     ► Also Crusader's Crossbow && Huntsman && The Classic.
-#define TF_DMG_AMBASSADOR                   SDK_DMG_UNKNOWN7 | TF_DMG_BULLET2                       // 35651586
+#define TF_DMG_AMBASSADOR                   TF_PLUS4 | TF_DMG_BULLET2                       		// 35651586
 #define TF_DMG_AMBASSADOR_CRIT              TF_DMG_AMBASSADOR | TF_DMG_CRIT                         // 35651586     ► Only when able to Headshot.
-#define SDK_DMG_UNKNOWN8                    (1 << 26)                                               // 67108864
+#define SDK_DMG_UNUSER5                    	(1 << 26)                                               // 67108864
 #define TF_DMG_BLAST_SURFACE                (1 << 27)                                               // 134217728
-#define TF_DMG_MELEE                        TF_DMG_BLAST_SURFACE | TF_DMG_NEVERGIB | TF_DMG_MISC    // 134221952
+#define TF_DMG_MELEE                        TF_DMG_BLAST_SURFACE | TF_NEVERGIB | TF_DMG_MISC    	// 134221952
 #define TF_DMG_MELEE_CRIT                   TF_DMG_MELEE | TF_DMG_CRIT                              // 135270528
 #define DOTA_DMG_BLADEMAIL                  (1 << 28)                                               // 268435456
-#define SDK_DMG_UNKNOWN9                    (1 << 29)                                               // 536870912
-#define TF_DMG_SCATTERGUN                   SDK_DMG_UNKNOWN9 | SDK_DMG_UNKNOWN5                     // 538968064    ► Scattergun && Shotgun && Rescue Ranger.
+#define TF_PLUS5                    		(1 << 29)                                               // 536870912
+#define TF_DMG_SCATTERGUN                   TF_PLUS5 | TF_PLUS3                     				// 538968064    ► Scattergun && Shotgun && Rescue Ranger.
 #define TF_DMG_SHORTSTOP                    TF_DMG_SCATTERGUN | TF_DMG_BULLET                       // 538968066
 #define TF_DMG_SCATTERGUN_CRIT              TF_DMG_SCATTERGUN | TF_DMG_CRIT                         // 540016640    ► Scattergun && Shotgun && Rescue Ranger.
 #define TF_DMG_SHORTSTOP_CRIT               TF_DMG_SHORTSTOP | TF_DMG_CRIT                          // 540016642
@@ -164,6 +167,7 @@ public OnMapStart( )
 
 //==== [ STOCKS ] =======================================================
 //==== [ IS VALID CLIENT ] ==============================================
+/*
 stock bool:IsValidClient( client, bool:replaycheck = true )
 {
     if ( client <= 0 || client > MaxClients ) return false; 
@@ -176,7 +180,7 @@ stock bool:IsValidClient( client, bool:replaycheck = true )
     }
     return true; 
 }
-
+*/
 //==== [ CLEAR TIMER ] ==================================================
 stock bool:ClearTimer( &Handle:timer, bool:autoClose = false )
 {
@@ -190,7 +194,7 @@ stock bool:ClearTimer( &Handle:timer, bool:autoClose = false )
 }
 
 //==== [ DEAL DAMAGE ] ==================================================
-stock DealDamage(victim, damage, attacker=0, dmg_type=HL_DMG_GENERIC, String:logname[]="")
+stock DealDamage( victim, damage, attacker=0, dmg_type=HL_DMG_GENERIC, String:logname[]="" )
 {
     if(victim>0 && IsValidEdict(victim) && IsClientInGame(victim) && IsPlayerAlive(victim) && damage>0)
     {
@@ -232,7 +236,7 @@ stock TF2_SetHealth( client, NewHealth )
 stock Float:TF2_GetClientUberLevel( client )
 {
     new entity = TF2_Medigun( client ); 
-    if ( IsValidEntity( entity ) && IsValidEdict( entity ) ) return GetEntPropFloat( entity, Prop_Send, "m_flChargeLevel" )*100.0; 
+    if ( IsValidEntity( entity ) && IsValidEdict( entity ) ) return GetEntPropFloat( entity, Prop_Send, "m_flChargeLevel" ) * 100.0; 
     return 0.0; 
 }
 stock TF2_SetClientUberLevel( client, Float:level )
@@ -292,7 +296,7 @@ stock TF2_SetClientMetal( client, NewMetal )
             mult *= TF2Attrib_GetValue( attribute ); 
         }
     }
-    if ( NewMetal > 200 * mult ) NewMetal = RoundToFloor( 200 * mult ); 
+    if ( NewMetal > 200.0 * mult ) NewMetal = RoundToFloor( 200.0 * mult ); 
     SetEntProp( client, Prop_Data, "m_iAmmo", NewMetal, 4, 3 ); 
 }
 
@@ -520,13 +524,13 @@ stock Float:GetClassBaseMovementSpeed( client )
 {
     if ( IsValidClient( client ) && IsPlayerAlive( client ) )
     {
-        if ( TF2_GetPlayerClass( client ) == TFClass_Scout ) return 400.0; 
-        if ( TF2_GetPlayerClass( client ) == TFClass_Medic || TF2_GetPlayerClass( client ) == TFClass_Spy ) return 320.0; 
-        if ( TF2_GetPlayerClass( client ) == TFClass_DemoMan ) return 280.0; 
-        if ( TF2_GetPlayerClass( client ) == TFClass_Soldier ) return 240.0; 
-        if ( TF2_GetPlayerClass( client ) == TFClass_Heavy ) return 230.0; 
+        if ( TF2_GetPlayerClass( client ) == TFClass_Scout ) return 400.0 * GetClientMovementSpeedAttributes( client ); 
+        if ( TF2_GetPlayerClass( client ) == TFClass_Medic || TF2_GetPlayerClass( client ) == TFClass_Spy ) return 320.0 * GetClientMovementSpeedAttributes( client ); 
+        if ( TF2_GetPlayerClass( client ) == TFClass_DemoMan ) return 280.0 * GetClientMovementSpeedAttributes( client ); 
+        if ( TF2_GetPlayerClass( client ) == TFClass_Soldier ) return 240.0 * GetClientMovementSpeedAttributes( client ); 
+        if ( TF2_GetPlayerClass( client ) == TFClass_Heavy ) return 230.0 * GetClientMovementSpeedAttributes( client ); 
         
-        return 300.0; 
+        return 300.0 * GetClientMovementSpeedAttributes( client ); 
     }
 
     return 0.0; 
@@ -571,7 +575,10 @@ stock Float:GetClientMovementSpeedAttributes( client )
 
                 attribute = TF2Attrib_GetByName( weapon_slot, "speed boost when active" ); 
                 if ( attribute != Address_Null )
-                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i ); 
+                    mult *= GetMultMoveSpeed( attribute, active[i], active_slot, i );
+
+	//				if ( IsPlayerInCon)
+                // Unfinished, not going to be finished.
             }
         }
         
@@ -1117,3 +1124,74 @@ stock bool:IsAProjectile( entity )
     }
     return false; 
 }
+/*
+bool:HasAttribute( client, slot = -1, const attribute[][] = m_bHasAttribute, bool:active = false )
+{
+	if ( !IsValidClient( client ) ) return false;
+	
+	if ( !active ) {
+		for ( new i = 0; i <= 4; i++ ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( attribute[client][i] ) {
+					if ( slot == -1 || slot == i ) return true;
+		}}}
+	}
+	if ( active ) {
+		if ( !IsPlayerAlive( client ) ) return false;
+
+		new i = TF2_GetClientActiveSlot( client );
+		if ( i != -1 ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( attribute[client][i] ) return true;
+		}}
+	}
+	
+	return false;
+}
+Float:GetAttributeValueF( client, slot = -1, const bool:baseAttribute[][], const Float:attribute[][], bool:active = false )
+{
+	if ( !IsValidClient( client ) ) return 0.0;
+	
+	if ( !active ) {
+		for ( new i = 0; i <= 4; i++ ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( baseAttribute[client][i] ) {
+					if ( slot == -1 || slot == i ) return attribute[client][i];
+		}}}
+	}
+	if ( active ) {
+		if ( !IsPlayerAlive( client ) ) return 0.0;
+
+		new i = TF2_GetClientActiveSlot( client );
+		if ( i != -1 ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( baseAttribute[client][i] ) return attribute[client][i];
+		}}
+	}
+	
+	return 0.0;
+}
+GetAttributeValueI( client, slot = -1, const bool:baseAttribute[][], const attribute[][], bool:active = false )
+{
+	if ( !IsValidClient( client ) ) return 0;
+	
+	if ( !active ) {
+		for ( new i = 0; i <= 4; i++ ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( baseAttribute[client][i] ) {
+					if ( slot == -1 || slot == i ) return attribute[client][i];
+		}}}
+	}
+	if ( active ) {
+		if ( !IsPlayerAlive( client ) ) return 0;
+
+		new i = TF2_GetClientActiveSlot( client );
+		if ( i != -1 ) {
+			if ( m_bHasAttribute[client][i] ) {
+				if ( baseAttribute[client][i] ) return attribute[client][i];
+		}}
+	}
+	
+	return 0;
+}
+*/
